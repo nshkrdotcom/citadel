@@ -121,10 +121,11 @@ defmodule Citadel.Workspace.MixProject do
         env: "CITADEL_MONOREPO_MAX_CONCURRENCY",
         multiplier: :auto,
         base: [
-          deps_get: 3,
+          deps_get: 4,
           format: 4,
-          compile: 2,
-          test: 2
+          compile: 4,
+          test: 4,
+          dialyzer: 4
         ],
         overrides: []
       ],
