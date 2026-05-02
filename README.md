@@ -228,9 +228,9 @@ mix hardening.infrastructure_faults
 
 ## Temporal developer environment
 
-Temporal CLI is expected to be available as `temporal` on this developer workstation for local durable-workflow development. Current provisioning is machine-level dotfiles setup, not a repo-local dependency.
-
-TODO: make Temporal ergonomics explicit for developers by adding repo-local setup scripts, version expectations, and fallback instructions so the tool is not silently assumed from the workstation.
+Temporal runtime development is managed from `/home/home/p/g/n/mezzanine`
+through the repo-owned `just` workflow. Do not start ad hoc Temporal processes
+or rely on the `temporal` CLI as the implementation runbook.
 
 ## Native Temporal development substrate
 
