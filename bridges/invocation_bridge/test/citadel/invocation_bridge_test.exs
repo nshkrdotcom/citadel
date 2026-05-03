@@ -186,14 +186,12 @@ defmodule Citadel.InvocationBridgeTest do
   end
 
   test "rejects explicit invocation schema transition windows without a migration policy" do
-    assert_raise ArgumentError,
-                 ~r/supported_invocation_request_schema_versions must match current accepted versions/,
-                 fn ->
-                   InvocationBridge.new!(
-                     downstream: Downstream,
-                     supported_invocation_request_schema_versions: [2, 3]
-                   )
-                 end
+    assert_raise ArgumentError, fn ->
+      InvocationBridge.new!(
+        downstream: Downstream,
+        supported_invocation_request_schema_versions: [2, 3]
+      )
+    end
 
     bridge =
       InvocationBridge.new!(

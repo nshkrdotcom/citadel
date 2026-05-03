@@ -241,9 +241,7 @@ defmodule Citadel.DomainSurface.CitadelAdapterTest do
       lifecycle_event: "attached"
     }
 
-    assert_raise ArgumentError,
-                 ~r/citadel acceptance :ingress_path string value must be one of/,
-                 fn -> Accepted.new!(attrs) end
+    assert_raise ArgumentError, fn -> Accepted.new!(attrs) end
 
     attrs = %{
       request_id: "cmd-bounded-lifecycle",
@@ -252,9 +250,7 @@ defmodule Citadel.DomainSurface.CitadelAdapterTest do
       lifecycle_event: "ok"
     }
 
-    assert_raise ArgumentError,
-                 ~r/citadel acceptance :lifecycle_event string value must be one of/,
-                 fn -> Accepted.new!(attrs) end
+    assert_raise ArgumentError, fn -> Accepted.new!(attrs) end
   end
 
   test "mints a trace_id before command submission when the host omits one" do

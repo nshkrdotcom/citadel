@@ -900,12 +900,27 @@ defmodule Citadel.Apps.HostSurfaceHarness do
 
   defp sanitize_workspace_root(workspace_root) when is_binary(workspace_root) do
     workspace_root
-    |> String.replace(~r/[^a-zA-Z0-9]+/, "-")
+    |> ascii_alnum_dash()
     |> String.trim("-")
     |> case do
       "" -> "default"
       value -> value
     end
+  end
+
+  defp ascii_alnum_dash(value) do
+    value
+    |> :binary.bin_to_list()
+    |> Enum.reduce({[], false}, fn byte, {chars, previous_dash?} ->
+      if byte in ?A..?Z or byte in ?a..?z or byte in ?0..?9 do
+        {[byte | chars], false}
+      else
+        if previous_dash?, do: {chars, true}, else: {[?- | chars], true}
+      end
+    end)
+    |> elem(0)
+    |> Enum.reverse()
+    |> List.to_string()
   end
 
   defp base_envelope_attrs do

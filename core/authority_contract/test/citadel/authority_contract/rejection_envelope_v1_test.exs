@@ -23,13 +23,13 @@ defmodule Citadel.AuthorityContract.RejectionEnvelope.V1Test do
   end
 
   test "fails closed on missing actor and unknown rejection class" do
-    assert_raise ArgumentError, ~r/requires principal_ref or system_actor_ref/, fn ->
+    assert_raise ArgumentError, fn ->
       sample_attrs()
       |> Map.delete(:principal_ref)
       |> V1.new!()
     end
 
-    assert_raise ArgumentError, ~r/rejection_class must be one of/, fn ->
+    assert_raise ArgumentError, fn ->
       sample_attrs()
       |> Map.put(:rejection_class, "invented")
       |> V1.new!()

@@ -13,7 +13,6 @@ defmodule Citadel.AuthorityContract.AuthorityPacket.V2 do
 
   @packet_name "Citadel.AuthorityPacketV2.v1"
   @contract_version "1.0.0"
-  @hash_regex ~r/\A[0-9a-f]{64}\z/
   @extensions_namespaces ["citadel"]
   @max_authority_hash_inline_bytes 1_000_000
 
@@ -317,7 +316,7 @@ defmodule Citadel.AuthorityContract.AuthorityPacket.V2 do
   end
 
   defp hash!(value, field) when is_binary(value) do
-    if Regex.match?(@hash_regex, value) do
+    if lower_hex_64?(value) do
       value
     else
       raise ArgumentError, "#{@packet_name}.#{field} must be lowercase SHA-256 hex"
@@ -327,6 +326,13 @@ defmodule Citadel.AuthorityContract.AuthorityPacket.V2 do
   defp hash!(value, field) do
     raise ArgumentError,
           "#{@packet_name}.#{field} must be lowercase SHA-256 hex, got: #{inspect(value)}"
+  end
+
+  defp lower_hex_64?(value) do
+    byte_size(value) == 64 and
+      value
+      |> :binary.bin_to_list()
+      |> Enum.all?(fn byte -> byte in ?0..?9 or byte in ?a..?f end)
   end
 
   defp extensions!(value, field) do

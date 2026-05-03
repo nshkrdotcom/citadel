@@ -3,9 +3,6 @@ defmodule Citadel.Governance.AccessGraphAuthorityCache do
   Minimal authority-cache epoch state reconciled from access graph invalidations.
   """
 
-  @topic_segment_regex ~r/\A[a-z0-9_-]+\z/
-  @topic_regex ~r/\A[a-z0-9_-]+(\.[a-z0-9_-]+)*\z/
-
   @enforce_keys [:tenant_ref, :snapshot_epoch]
   defstruct [
     :tenant_ref,
@@ -96,7 +93,7 @@ defmodule Citadel.Governance.AccessGraphAuthorityCache do
   defp topic!(segments) do
     topic = Enum.map_join(segments, ".", &segment!/1)
 
-    if Regex.match?(@topic_regex, topic) do
+    if topic_name?(topic) do
       topic
     else
       raise ArgumentError, "invalid graph topic: #{inspect(topic)}"
@@ -106,7 +103,7 @@ defmodule Citadel.Governance.AccessGraphAuthorityCache do
   defp segment!(segment) do
     segment = require_string!(segment, :topic_segment)
 
-    if Regex.match?(@topic_segment_regex, segment) do
+    if topic_segment?(segment) do
       segment
     else
       raise ArgumentError, "invalid graph topic segment: #{inspect(segment)}"
@@ -117,6 +114,19 @@ defmodule Citadel.Governance.AccessGraphAuthorityCache do
 
   defp positive_epoch!(epoch) do
     raise ArgumentError, "graph epoch must be a positive integer, got: #{inspect(epoch)}"
+  end
+
+  defp topic_name?(topic) do
+    topic
+    |> String.split(".")
+    |> then(fn segments -> segments != [] and Enum.all?(segments, &topic_segment?/1) end)
+  end
+
+  defp topic_segment?(segment) do
+    segment != "" and
+      segment
+      |> :binary.bin_to_list()
+      |> Enum.all?(fn byte -> byte in ?a..?z or byte in ?0..?9 or byte in [?_, ?-] end)
   end
 
   defp required_string!(attrs, key), do: require_string!(value(attrs, key), key)

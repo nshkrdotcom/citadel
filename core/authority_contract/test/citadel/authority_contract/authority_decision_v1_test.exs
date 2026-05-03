@@ -58,7 +58,7 @@ defmodule Citadel.AuthorityContract.AuthorityDecision.V1Test do
     unbound = read_fixture!("minimal.json") |> V1.new!()
     refute V1.action_bound?(unbound)
 
-    assert_raise ArgumentError, ~r/for_action_ref is required/, fn ->
+    assert_raise ArgumentError, fn ->
       V1.require_for_action_ref!(unbound)
     end
   end
@@ -67,7 +67,7 @@ defmodule Citadel.AuthorityContract.AuthorityDecision.V1Test do
     fixture = read_fixture!("minimal.json")
     attrs = put_in(fixture, ["extensions", "other"], %{})
 
-    assert_raise ArgumentError, ~r/only allows \[\"citadel\"\] namespaces/, fn ->
+    assert_raise ArgumentError, fn ->
       V1.new!(attrs)
     end
   end

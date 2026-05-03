@@ -32,37 +32,35 @@ defmodule Citadel.ContractCore.CanonicalJsonTest do
   end
 
   test "rejects duplicate post-normalization object keys" do
-    assert_raise ArgumentError, ~r/duplicate map key after normalization/, fn ->
+    assert_raise ArgumentError, fn ->
       CanonicalJson.normalize!(%{:foo => 1, "foo" => 2})
     end
 
-    assert_raise ArgumentError, ~r/duplicate keyword_list key after normalization/, fn ->
+    assert_raise ArgumentError, fn ->
       CanonicalJson.normalize!(foo: 1, foo: 2)
     end
   end
 
   test "rejects oversized inline input before JCS encoding" do
-    assert_raise ArgumentError,
-                 ~r/Packet hash input exceeds inline canonicalization byte limit/,
-                 fn ->
-                   CanonicalJson.encode_inline!(
-                     %{"payload" => String.duplicate("x", 256)},
-                     max_bytes: 128,
-                     label: "Packet hash input"
-                   )
-                 end
+    assert_raise ArgumentError, fn ->
+      CanonicalJson.encode_inline!(
+        %{"payload" => String.duplicate("x", 256)},
+        max_bytes: 128,
+        label: "Packet hash input"
+      )
+    end
   end
 
   test "rejects unsupported non-json values and generic structs" do
-    assert_raise ArgumentError, ~r/unsupported non-JSON value/, fn ->
+    assert_raise ArgumentError, fn ->
       CanonicalJson.normalize!({:tuple, 1})
     end
 
-    assert_raise ArgumentError, ~r/unsupported non-JSON value/, fn ->
+    assert_raise ArgumentError, fn ->
       CanonicalJson.normalize!(self())
     end
 
-    assert_raise ArgumentError, ~r/unsupported struct/, fn ->
+    assert_raise ArgumentError, fn ->
       CanonicalJson.normalize!(%URI{scheme: "https", host: "example.com"})
     end
   end

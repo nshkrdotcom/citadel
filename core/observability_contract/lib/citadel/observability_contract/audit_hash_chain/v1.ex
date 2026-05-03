@@ -10,7 +10,6 @@ defmodule Citadel.ObservabilityContract.AuditHashChain.V1 do
   @contract_name "Platform.AuditHashChain.v1"
   @contract_version "1.0.0"
   @genesis_hash "genesis"
-  @sha256_regex ~r/\Asha256:[0-9a-f]{64}\z/
 
   @fields [
     :contract_name,
@@ -166,7 +165,14 @@ defmodule Citadel.ObservabilityContract.AuditHashChain.V1 do
     end
   end
 
-  defp sha256_hash?(value), do: Regex.match?(@sha256_regex, value)
+  defp sha256_hash?(<<"sha256:", digest::binary-size(64)>>), do: lower_hex?(digest)
+  defp sha256_hash?(_value), do: false
+
+  defp lower_hex?(value) do
+    value
+    |> :binary.bin_to_list()
+    |> Enum.all?(fn byte -> byte in ?0..?9 or byte in ?a..?f end)
+  end
 
   defp required_string!(attrs, key) do
     attrs

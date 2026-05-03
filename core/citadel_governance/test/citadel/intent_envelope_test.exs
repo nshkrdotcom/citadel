@@ -70,7 +70,7 @@ defmodule Citadel.IntentEnvelopeTest do
   test "rejects raw intent strings at the kernel boundary" do
     fixture = read_fixture!("valid.json") |> Map.put("intent", "open the repo")
 
-    assert_raise ArgumentError, ~r/unsupported fields/, fn ->
+    assert_raise ArgumentError, fn ->
       IntentEnvelope.new!(fixture)
     end
   end

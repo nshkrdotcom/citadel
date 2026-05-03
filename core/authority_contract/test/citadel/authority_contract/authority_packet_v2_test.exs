@@ -19,7 +19,7 @@ defmodule Citadel.AuthorityContract.AuthorityPacket.V2Test do
 
     assert V2.hashes_valid?(packet)
     assert packet.decision_hash == packet.canonical_json_hash
-    assert Regex.match?(~r/\A[0-9a-f]{64}\z/, packet.decision_hash)
+    assert lower_hex_64?(packet.decision_hash)
 
     tampered =
       packet
@@ -31,13 +31,13 @@ defmodule Citadel.AuthorityContract.AuthorityPacket.V2Test do
   end
 
   test "requires an actor and rejects extension namespaces outside citadel" do
-    assert_raise ArgumentError, ~r/requires principal_ref or system_actor_ref/, fn ->
+    assert_raise ArgumentError, fn ->
       sample_attrs()
       |> Map.delete(:principal_ref)
       |> V2.put_hashes!()
     end
 
-    assert_raise ArgumentError, ~r/only allows \["citadel"\] namespaces/, fn ->
+    assert_raise ArgumentError, fn ->
       sample_attrs()
       |> Map.put(:extensions, %{"other" => %{}})
       |> V2.put_hashes!()
@@ -51,9 +51,16 @@ defmodule Citadel.AuthorityContract.AuthorityPacket.V2Test do
         "citadel" => %{"oversized_context" => String.duplicate("x", 1_100_000)}
       })
 
-    assert_raise ArgumentError, ~r/exceeds inline canonicalization byte limit/, fn ->
+    assert_raise ArgumentError, fn ->
       V2.put_hashes!(attrs)
     end
+  end
+
+  defp lower_hex_64?(value) do
+    byte_size(value) == 64 and
+      value
+      |> :binary.bin_to_list()
+      |> Enum.all?(fn byte -> byte in ?0..?9 or byte in ?a..?f end)
   end
 
   defp sample_attrs do

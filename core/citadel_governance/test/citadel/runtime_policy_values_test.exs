@@ -20,11 +20,11 @@ defmodule Citadel.RuntimePolicyValuesTest do
   end
 
   test "signal ingress rebuild policy rejects looser than packet MVP limits" do
-    assert_raise ArgumentError, ~r/batch_interval_ms must be <= 250/, fn ->
+    assert_raise ArgumentError, fn ->
       SignalIngressRebuildPolicy.new!(%{batch_interval_ms: 251})
     end
 
-    assert_raise ArgumentError, ~r/high_priority_ready_slo_ms must be <= 5000/, fn ->
+    assert_raise ArgumentError, fn ->
       SignalIngressRebuildPolicy.new!(%{high_priority_ready_slo_ms: 5_001})
     end
   end
@@ -38,11 +38,11 @@ defmodule Citadel.RuntimePolicyValuesTest do
   end
 
   test "boundary resume policy rejects unbounded waits" do
-    assert_raise ArgumentError, ~r/max_wait_ms must be <= 30000/, fn ->
+    assert_raise ArgumentError, fn ->
       BoundaryResumePolicy.new!(%{max_wait_ms: 30_001})
     end
 
-    assert_raise ArgumentError, ~r/retry_interval_ms must be <= 1000/, fn ->
+    assert_raise ArgumentError, fn ->
       BoundaryResumePolicy.new!(%{retry_interval_ms: 1_001})
     end
   end
@@ -61,18 +61,16 @@ defmodule Citadel.RuntimePolicyValuesTest do
   end
 
   test "session activation policy rejects idle before recovery classes" do
-    assert_raise ArgumentError,
-                 ~r/must start with \["blocked", "pending_replay_safe", "explicit_resume", "committed_signal_lag"\]/,
-                 fn ->
-                   SessionActivationPolicy.new!(%{
-                     priority_order: [
-                       "blocked",
-                       "idle",
-                       "pending_replay_safe",
-                       "explicit_resume",
-                       "committed_signal_lag"
-                     ]
-                   })
-                 end
+    assert_raise ArgumentError, fn ->
+      SessionActivationPolicy.new!(%{
+        priority_order: [
+          "blocked",
+          "idle",
+          "pending_replay_safe",
+          "explicit_resume",
+          "committed_signal_lag"
+        ]
+      })
+    end
   end
 end

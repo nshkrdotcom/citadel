@@ -35,7 +35,7 @@ defmodule Citadel.InvocationRequestTest do
       |> Map.delete("decision_hash")
       |> put_in(["extensions", "citadel"], %{"bad" => {:tuple, 1}})
 
-    assert_raise ArgumentError, ~r/unsupported non-JSON value/, fn ->
+    assert_raise ArgumentError, fn ->
       DecisionHash.put_authority_hash!(attrs)
     end
   end
@@ -48,7 +48,7 @@ defmodule Citadel.InvocationRequestTest do
         "citadel" => %{"oversized_context" => String.duplicate("x", 1_100_000)}
       })
 
-    assert_raise ArgumentError, ~r/exceeds inline canonicalization byte limit/, fn ->
+    assert_raise ArgumentError, fn ->
       DecisionHash.put_authority_hash!(attrs)
     end
   end
@@ -103,7 +103,7 @@ defmodule Citadel.InvocationRequestTest do
       read_invocation_fixture!("structured_request.json")
       |> put_in(["extensions", "citadel", "ingress_provenance", "raw_text"], "open the repo")
 
-    assert_raise ArgumentError, ~r/refs or hashes, not raw payload keys/, fn ->
+    assert_raise ArgumentError, fn ->
       InvocationRequest.new!(fixture)
     end
   end

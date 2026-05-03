@@ -112,9 +112,15 @@ defmodule Citadel.Kernel.TracePublisher do
       do: raise(missing_budget_error(budget, "success=<positive>/min"))
 
     defp parse_success_budget!(value, budget) do
-      case Regex.run(~r/\A([1-9][0-9]*)\/(?:min|minute)\z/, value) do
-        [_match, count] -> String.to_integer(count)
-        _other -> raise invalid_budget_error(budget)
+      case String.split(value, "/", parts: 2) do
+        [count, unit] when unit in ["min", "minute"] ->
+          case Integer.parse(count) do
+            {integer, ""} when integer > 0 -> integer
+            _other -> raise invalid_budget_error(budget)
+          end
+
+        _other ->
+          raise invalid_budget_error(budget)
       end
     end
 

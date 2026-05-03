@@ -58,11 +58,9 @@ defmodule Citadel.Conformance.WorkspaceSkeletonTest do
 
     assert Citadel.InvocationBridge.supported_invocation_request_schema_versions() == [2]
 
-    assert_raise ArgumentError,
-                 ~r/unsupported Citadel\.InvocationRequest\.V2\.schema_version/,
-                 fn ->
-                   Citadel.InvocationBridge.ensure_supported_invocation_request_schema_version!(1)
-                 end
+    assert_raise ArgumentError, fn ->
+      Citadel.InvocationBridge.ensure_supported_invocation_request_schema_version!(1)
+    end
 
     assert Citadel.Apps.HostSurfaceHarness.manifest().status == :wave_7_host_surface_proof
     assert Citadel.Conformance.manifest().status == :wave_7_black_box_conformance

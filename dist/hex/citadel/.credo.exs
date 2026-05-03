@@ -37,7 +37,6 @@
         {Credo.Check.Warning.UnusedListOperation, []},
         {Credo.Check.Warning.UnusedMapOperation, []},
         {Credo.Check.Warning.UnusedPathOperation, []},
-        {Credo.Check.Warning.UnusedRegexOperation, []},
         {Credo.Check.Warning.UnusedStringOperation, []},
         {Credo.Check.Warning.UnusedTupleOperation, []}
       ]

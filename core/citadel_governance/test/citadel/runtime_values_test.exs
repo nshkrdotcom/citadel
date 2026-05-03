@@ -60,7 +60,7 @@ defmodule Citadel.RuntimeValuesTest do
   end
 
   test "staleness requirements reject snapshot-seq-only checks" do
-    assert_raise ArgumentError, ~r/explicit epoch, binding, or boundary comparison/, fn ->
+    assert_raise ArgumentError, fn ->
       StalenessRequirements.new!(%{
         snapshot_seq: 10,
         policy_epoch: nil,

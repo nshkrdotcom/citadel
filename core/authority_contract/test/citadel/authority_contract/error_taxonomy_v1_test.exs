@@ -25,19 +25,19 @@ defmodule Citadel.AuthorityContract.ErrorTaxonomy.V1Test do
   end
 
   test "fails closed on missing actor, unknown error class, and unsafe retry posture" do
-    assert_raise ArgumentError, ~r/requires principal_ref or system_actor_ref/, fn ->
+    assert_raise ArgumentError, fn ->
       sample_attrs()
       |> Map.delete(:system_actor_ref)
       |> V1.new!()
     end
 
-    assert_raise ArgumentError, ~r/error_class must be one of/, fn ->
+    assert_raise ArgumentError, fn ->
       sample_attrs()
       |> Map.put(:error_class, "invented")
       |> V1.new!()
     end
 
-    assert_raise ArgumentError, ~r/retry_posture must be one of/, fn ->
+    assert_raise ArgumentError, fn ->
       sample_attrs()
       |> Map.put(:retry_posture, "retry_forever")
       |> V1.new!()

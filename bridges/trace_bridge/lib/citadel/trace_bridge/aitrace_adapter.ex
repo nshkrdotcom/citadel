@@ -4,9 +4,6 @@ defmodule Citadel.TraceBridge.AITraceAdapter do
   alias AITrace.{Context, Event, Span, Trace}
   alias Citadel.TraceEnvelope
 
-  @generated_id_regex ~r/\A[0-9a-f]{32}\z/
-  @external_alias_regex ~r/\A[A-Za-z0-9][A-Za-z0-9._:-]{0,127}\z/
-
   @spec publish_trace(TraceEnvelope.t()) :: :ok | {:error, atom()}
   def publish_trace(%TraceEnvelope{} = envelope) do
     envelope
@@ -205,7 +202,7 @@ defmodule Citadel.TraceBridge.AITraceAdapter do
       apply(AITrace.Identifier, :parent_span_source!, [parent_span_id])
     else
       source_kind =
-        if Regex.match?(@generated_id_regex, parent_span_id),
+        if generated_id?(parent_span_id),
           do: :aitrace_generated,
           else: :external_alias
 
@@ -231,7 +228,7 @@ defmodule Citadel.TraceBridge.AITraceAdapter do
   end
 
   defp fallback_id_source!(id_type, id, :aitrace_generated) when id_type in [:trace, :span] do
-    if Regex.match?(@generated_id_regex, id) do
+    if generated_id?(id) do
       %{
         id_type: id_type,
         kind: :aitrace_generated,
@@ -249,7 +246,7 @@ defmodule Citadel.TraceBridge.AITraceAdapter do
   end
 
   defp fallback_id_source!(id_type, id, :external_alias) when id_type in [:trace, :span] do
-    if Regex.match?(@external_alias_regex, id) do
+    if external_alias?(id) do
       %{
         id_type: id_type,
         kind: :external_alias,
@@ -397,4 +394,24 @@ defmodule Citadel.TraceBridge.AITraceAdapter do
   defp map_error_reason(:backend_rejected), do: :backend_rejected
   defp map_error_reason(:unavailable), do: :unavailable
   defp map_error_reason(_other), do: :unknown
+
+  defp generated_id?(id) do
+    byte_size(id) == 32 and
+      id
+      |> :binary.bin_to_list()
+      |> Enum.all?(&lower_hex?/1)
+  end
+
+  defp external_alias?(<<first, rest::binary>>) do
+    byte_size(rest) <= 127 and alnum?(first) and
+      rest
+      |> :binary.bin_to_list()
+      |> Enum.all?(fn byte -> alnum?(byte) or byte in [?., ?_, ?:, ?-] end)
+  end
+
+  defp external_alias?(_id), do: false
+
+  defp lower_hex?(byte), do: byte in ?0..?9 or byte in ?a..?f
+
+  defp alnum?(byte), do: byte in ?A..?Z or byte in ?a..?z or byte in ?0..?9
 end

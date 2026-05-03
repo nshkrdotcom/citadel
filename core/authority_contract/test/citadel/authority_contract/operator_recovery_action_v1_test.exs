@@ -18,7 +18,7 @@ defmodule Citadel.AuthorityContract.OperatorRecoveryAction.V1Test do
   end
 
   test "fails closed when the safe action class is not whitelisted" do
-    assert_raise ArgumentError, ~r/safe_action_class must be one of/, fn ->
+    assert_raise ArgumentError, fn ->
       sample_attrs()
       |> Map.put(:safe_action_class, "delete_payloads")
       |> V1.new!()

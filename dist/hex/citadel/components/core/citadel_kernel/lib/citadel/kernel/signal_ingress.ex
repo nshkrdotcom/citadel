@@ -665,13 +665,39 @@ defmodule Citadel.Kernel.SignalIngress do
   defp source_anchor_ordinal(value) when is_integer(value), do: {:ok, value}
 
   defp source_anchor_ordinal(value) when is_binary(value) do
-    case Regex.run(~r/(?:^|[\/:-])(\d+)$/, value) do
-      [_, ordinal] -> {:ok, String.to_integer(ordinal)}
-      _other -> :unknown
+    value
+    |> trailing_digits()
+    |> case do
+      "" -> :unknown
+      digits -> parse_delimited_trailing_digits(value, digits)
     end
   end
 
   defp source_anchor_ordinal(_value), do: :unknown
+
+  defp trailing_digits(value) do
+    value
+    |> String.to_charlist()
+    |> Enum.reverse()
+    |> Enum.take_while(fn byte -> byte in ?0..?9 end)
+    |> Enum.reverse()
+    |> List.to_string()
+  end
+
+  defp parse_delimited_trailing_digits(value, digits) do
+    prefix_size = byte_size(value) - byte_size(digits)
+
+    cond do
+      prefix_size == 0 ->
+        {:ok, String.to_integer(digits)}
+
+      binary_part(value, prefix_size - 1, 1) in ["/", ":", "-"] ->
+        {:ok, String.to_integer(digits)}
+
+      true ->
+        :unknown
+    end
+  end
 
   defp remember_source_anchor(extensions, %{kind: kind, value: value})
        when kind in [:source_position, :revision] and is_binary(value) do
