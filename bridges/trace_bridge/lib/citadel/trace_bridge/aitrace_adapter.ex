@@ -12,10 +12,28 @@ defmodule Citadel.TraceBridge.AITraceAdapter do
     |> normalize_export_result()
   end
 
+  @spec publish_trace(TraceEnvelope.t(), keyword()) :: :ok | {:error, atom()}
+  def publish_trace(%TraceEnvelope{} = envelope, opts) when is_list(opts) do
+    envelope
+    |> to_trace()
+    |> export_trace(opts)
+    |> normalize_export_result()
+  end
+
   @spec publish_traces([TraceEnvelope.t()]) :: :ok | {:error, atom()}
   def publish_traces(envelopes) when is_list(envelopes) do
     Enum.reduce_while(envelopes, :ok, fn envelope, :ok ->
       case publish_trace(envelope) do
+        :ok -> {:cont, :ok}
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
+  end
+
+  @spec publish_traces([TraceEnvelope.t()], keyword()) :: :ok | {:error, atom()}
+  def publish_traces(envelopes, opts) when is_list(envelopes) and is_list(opts) do
+    Enum.reduce_while(envelopes, :ok, fn envelope, :ok ->
+      case publish_trace(envelope, opts) do
         :ok -> {:cont, :ok}
         {:error, reason} -> {:halt, {:error, reason}}
       end
@@ -339,9 +357,22 @@ defmodule Citadel.TraceBridge.AITraceAdapter do
     end
   end
 
+  defp export_trace(%Trace{} = trace, opts) do
+    case Keyword.fetch(opts, :legacy_exporters) do
+      {:ok, exporters} ->
+        run_legacy_exporters(trace, exporters)
+
+      :error ->
+        export_trace(trace)
+    end
+  end
+
   defp legacy_export_trace(%Trace{} = trace) do
     exporters = Application.get_env(:aitrace, :exporters, []) || []
+    run_legacy_exporters(trace, exporters)
+  end
 
+  defp run_legacy_exporters(%Trace{} = trace, exporters) when is_list(exporters) do
     if exporters == [] do
       {:error, :unavailable}
     else
@@ -358,6 +389,8 @@ defmodule Citadel.TraceBridge.AITraceAdapter do
       end)
     end
   end
+
+  defp run_legacy_exporters(%Trace{}, _exporters), do: {:error, :backend_rejected}
 
   defp normalize_export_result(:ok), do: :ok
   defp normalize_export_result({:error, reason}), do: {:error, map_error_reason(reason)}

@@ -14,9 +14,19 @@ defmodule Citadel.JidoIntegrationBridge.InvocationDownstream do
 
   @impl true
   def submit_execution_intent(%ExecutionIntentEnvelopeV2{} = envelope) do
+    submit_execution_intent(envelope, [])
+  end
+
+  @spec submit_execution_intent(ExecutionIntentEnvelopeV2.t(), keyword()) ::
+          {:accepted, SubmissionAcceptance.t()}
+          | {:rejected, SubmissionRejection.t()}
+          | {:error, atom()}
+  def submit_execution_intent(%ExecutionIntentEnvelopeV2{} = envelope, opts) when is_list(opts) do
+    transport_module = JidoIntegrationBridge.transport_module(envelope, opts)
+
     envelope
     |> BrainInvocationAdapter.project!()
-    |> JidoIntegrationBridge.transport_module().submit_brain_invocation()
+    |> transport_module.submit_brain_invocation()
     |> normalize_result()
   end
 

@@ -1,5 +1,5 @@
 defmodule Citadel.JidoIntegrationBridgeTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias Citadel.ActionOutboxEntry
   alias Citadel.AuthorityContract.AuthorityDecision.V1, as: AuthorityDecisionV1
@@ -76,23 +76,18 @@ defmodule Citadel.JidoIntegrationBridgeTest do
     end
   end
 
+  defmodule AmbientTransport do
+    @behaviour Citadel.JidoIntegrationBridge.Transport
+
+    @impl true
+    def submit_brain_invocation(invocation) do
+      send(Process.get(:ji_bridge_test_pid), {:brain_invocation, invocation, :ambient})
+      {:error, :ambient_transport_used}
+    end
+  end
+
   setup do
-    previous_transport = Application.get_env(:citadel_jido_integration_bridge, :transport_module)
     Process.put(:ji_bridge_test_pid, self())
-    :ok = JidoIntegrationBridge.put_transport_module(TestTransport)
-
-    on_exit(fn ->
-      if is_nil(previous_transport) do
-        Application.delete_env(:citadel_jido_integration_bridge, :transport_module)
-      else
-        Application.put_env(
-          :citadel_jido_integration_bridge,
-          :transport_module,
-          previous_transport
-        )
-      end
-    end)
-
     :ok
   end
 
@@ -136,7 +131,9 @@ defmodule Citadel.JidoIntegrationBridgeTest do
     envelope = envelope_fixture("entry-submit")
 
     assert {:accepted, %SubmissionAcceptance{} = acceptance} =
-             InvocationDownstream.submit_execution_intent(envelope)
+             InvocationDownstream.submit_execution_intent(envelope,
+               transport_module: TestTransport
+             )
 
     assert acceptance.submission_receipt_ref == "submission/invoke-bridge-1"
 
@@ -145,11 +142,12 @@ defmodule Citadel.JidoIntegrationBridgeTest do
   end
 
   test "preserves duplicate acceptances from the transport without collapsing them into errors" do
-    :ok = JidoIntegrationBridge.put_transport_module(DuplicateTransport)
     envelope = envelope_fixture("entry-duplicate")
 
     assert {:accepted, %SubmissionAcceptance{} = acceptance} =
-             InvocationDownstream.submit_execution_intent(envelope)
+             InvocationDownstream.submit_execution_intent(envelope,
+               transport_module: DuplicateTransport
+             )
 
     assert acceptance.status == :duplicate
     assert acceptance.submission_receipt_ref == "submission/invoke-bridge-1"
@@ -159,14 +157,44 @@ defmodule Citadel.JidoIntegrationBridgeTest do
   end
 
   test "propagates typed submission rejections from the transport" do
-    :ok = JidoIntegrationBridge.put_transport_module(RejectedTransport)
     envelope = envelope_fixture("entry-rejected")
 
-    assert {:rejected, rejection} = InvocationDownstream.submit_execution_intent(envelope)
+    assert {:rejected, rejection} =
+             InvocationDownstream.submit_execution_intent(envelope,
+               transport_module: RejectedTransport
+             )
+
     assert rejection.retry_class == :after_redecision
     assert rejection.reason_code == "workspace_ref_unresolved"
 
     assert_receive {:brain_invocation, _invocation, :rejected}
+  end
+
+  test "rejects ambient application transport for governed execution intent envelopes" do
+    previous_transport = Application.get_env(:citadel_jido_integration_bridge, :transport_module)
+    :ok = JidoIntegrationBridge.put_transport_module(AmbientTransport)
+
+    on_exit(fn ->
+      if is_nil(previous_transport) do
+        Application.delete_env(:citadel_jido_integration_bridge, :transport_module)
+      else
+        Application.put_env(
+          :citadel_jido_integration_bridge,
+          :transport_module,
+          previous_transport
+        )
+      end
+    end)
+
+    envelope = envelope_fixture("entry-ambient")
+
+    assert JidoIntegrationBridge.transport_module(envelope, []) ==
+             Citadel.JidoIntegrationBridge.NoopTransport
+
+    assert {:error, :transport_not_configured} =
+             InvocationDownstream.submit_execution_intent(envelope)
+
+    refute_received {:brain_invocation, _invocation, :ambient}
   end
 
   test "projects substrate lineage without host-ingress continuity payloads" do

@@ -50,11 +50,26 @@ defmodule Citadel.JidoIntegrationBridge do
 
   @spec transport_module() :: module()
   def transport_module do
-    Application.get_env(:citadel_jido_integration_bridge, @transport_env_key, NoopTransport)
+    Application.get_env(
+      :citadel_jido_integration_bridge,
+      @transport_env_key,
+      __MODULE__.NoopTransport
+    )
+  end
+
+  @spec transport_module(term(), keyword()) :: module()
+  def transport_module(context, opts) when is_list(opts) do
+    case Keyword.fetch(opts, :transport_module) do
+      {:ok, module} when is_atom(module) -> module
+      :error -> default_transport_module(context)
+    end
   end
 
   @spec put_transport_module(module()) :: :ok
   def put_transport_module(module) when is_atom(module) do
     Application.put_env(:citadel_jido_integration_bridge, @transport_env_key, module)
   end
+
+  defp default_transport_module(nil), do: transport_module()
+  defp default_transport_module(_governed_context), do: __MODULE__.NoopTransport
 end

@@ -23,6 +23,8 @@ keeps AITrace-specific export concerns outside the core packages.
 
 - required trace families remain event-shaped
 - completed spans stay additive and one-shot; there is no open-span API
+- governed publication uses explicit adapter or legacy-exporter options rather
+  than ambient application env
 - best-effort post-commit publication stays in runtime via `TracePublisher`
 - the welded public artifact includes this bridge without leaking AITrace into
   the core package graph
