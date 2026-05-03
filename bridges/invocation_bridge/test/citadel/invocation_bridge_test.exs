@@ -523,7 +523,7 @@ defmodule Citadel.InvocationBridgeTest do
   end
 
   defp unique_name(prefix) do
-    :"#{prefix}_#{System.unique_integer([:positive])}"
+    {:global, {__MODULE__, prefix, System.unique_integer([:positive])}}
   end
 
   def submission_key_for!(seed) when is_binary(seed) do

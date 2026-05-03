@@ -271,6 +271,6 @@ defmodule Citadel.Kernel.SessionMigrationTest do
   defp maybe_put(map, false, _key, _value), do: map
 
   defp unique_name(prefix) do
-    :"#{prefix}_#{System.unique_integer([:positive, :monotonic])}"
+    {:global, {__MODULE__, prefix, System.unique_integer([:positive, :monotonic])}}
   end
 end

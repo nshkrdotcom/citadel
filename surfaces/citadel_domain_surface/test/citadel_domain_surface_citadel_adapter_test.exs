@@ -233,6 +233,30 @@ defmodule Citadel.DomainSurface.CitadelAdapterTest do
              "workspace/main"
   end
 
+  test "accepted results reject existing atoms outside the Citadel adapter vocabulary" do
+    attrs = %{
+      request_id: "cmd-bounded-accepted",
+      trace_id: "trace-bounded-accepted",
+      ingress_path: "ok",
+      lifecycle_event: "attached"
+    }
+
+    assert_raise ArgumentError,
+                 ~r/citadel acceptance :ingress_path string value must be one of/,
+                 fn -> Accepted.new!(attrs) end
+
+    attrs = %{
+      request_id: "cmd-bounded-lifecycle",
+      trace_id: "trace-bounded-lifecycle",
+      ingress_path: "direct_intent_envelope",
+      lifecycle_event: "ok"
+    }
+
+    assert_raise ArgumentError,
+                 ~r/citadel acceptance :lifecycle_event string value must be one of/,
+                 fn -> Accepted.new!(attrs) end
+  end
+
   test "mints a trace_id before command submission when the host omits one" do
     {:ok, agent} =
       Agent.start_link(fn ->

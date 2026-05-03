@@ -28,7 +28,7 @@ defmodule Mix.Tasks.Lint.PacketSeams do
                     ])
 
   @unsafe_to_atom_message """
-  String.to_atom/1 is forbidden on Domain boundary sources.
+  Unsafe string-to-atom conversion is forbidden on Domain boundary sources.
   Use existing atoms or explicit typed decoding before the public seam.
   """
 

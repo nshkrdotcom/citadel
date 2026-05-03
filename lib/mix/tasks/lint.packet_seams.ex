@@ -66,7 +66,7 @@ defmodule Mix.Tasks.Lint.PacketSeams do
   end
 
   defp render_kind(:unsafe_atom_creation),
-    do: "String.to_atom/1 is forbidden in packet-critical workspace paths"
+    do: "unsafe string-to-atom conversion is forbidden in packet-critical workspace paths"
 
   defp render_kind(:untyped_packet_seam_spec),
     do: "public seam specs may not fall back to raw map()/keyword() wrappers"

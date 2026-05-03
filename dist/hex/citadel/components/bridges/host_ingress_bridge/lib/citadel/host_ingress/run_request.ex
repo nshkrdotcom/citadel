@@ -310,17 +310,16 @@ defmodule Citadel.HostIngress.RunRequest do
         default
 
       value when is_binary(value) ->
-        atom_value =
-          case existing_atom(value) do
-            {:ok, atom} -> atom
-            :error -> value
-          end
+        allowed
+        |> enum_string_map()
+        |> Map.fetch(value)
+        |> case do
+          {:ok, atom_value} ->
+            atom_value
 
-        if atom_value in allowed do
-          atom_value
-        else
-          raise ArgumentError,
-                "run request #{label} must be one of #{inspect(allowed)}, got: #{inspect(value)}"
+          :error ->
+            raise ArgumentError,
+                  "run request #{label} must be one of #{inspect(allowed)}, got: #{inspect(value)}"
         end
 
       value ->
@@ -380,11 +379,7 @@ defmodule Citadel.HostIngress.RunRequest do
 
   defp fetch(attrs, key), do: Map.get(attrs, key, Map.get(attrs, Atom.to_string(key)))
 
-  defp existing_atom(value) when is_binary(value) do
-    {:ok, String.to_existing_atom(value)}
-  rescue
-    ArgumentError -> :error
-  end
+  defp enum_string_map(allowed), do: Map.new(allowed, &{Atom.to_string(&1), &1})
 
   defp normalize_string_item!(value, _key) when is_atom(value), do: Atom.to_string(value)
 

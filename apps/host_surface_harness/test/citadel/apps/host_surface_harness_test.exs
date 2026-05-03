@@ -642,6 +642,6 @@ defmodule Citadel.Apps.HostSurfaceHarnessTest do
   end
 
   defp unique_name(prefix) do
-    :"#{prefix}_#{System.unique_integer([:positive])}"
+    {:global, {__MODULE__, prefix, System.unique_integer([:positive])}}
   end
 end

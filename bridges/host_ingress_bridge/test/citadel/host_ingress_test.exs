@@ -208,6 +208,53 @@ defmodule Citadel.HostIngressTest do
              "tenant-cb:work-1:compile.workspace:1"
   end
 
+  test "accepted results reject existing atoms outside the host ingress vocabulary" do
+    attrs = %{
+      request_id: "req-bounded-accepted",
+      trace_id: "trace-bounded-accepted",
+      ingress_path: "ok",
+      lifecycle_event: "live_owner"
+    }
+
+    assert_raise ArgumentError,
+                 ~r/host ingress acceptance :ingress_path string value must be one of/,
+                 fn -> Accepted.new!(attrs) end
+
+    attrs = %{
+      request_id: "req-bounded-lifecycle",
+      trace_id: "trace-bounded-lifecycle",
+      ingress_path: "direct_intent_envelope",
+      lifecycle_event: "ok"
+    }
+
+    assert_raise ArgumentError,
+                 ~r/host ingress acceptance :lifecycle_event string value must be one of/,
+                 fn -> Accepted.new!(attrs) end
+  end
+
+  test "run request enum strings stay inside bounded vocabularies" do
+    request =
+      higher_order_run_request()
+      |> put_in([:scope, :preference], "preferred")
+      |> put_in([:constraints, :boundary_requirement], "fresh_only")
+      |> put_in([:target, :session_mode_preference], "detached")
+      |> put_in([:target, :coordination_mode_preference], "local_only")
+      |> RunRequest.new!()
+
+    assert request.scope.preference == :preferred
+    assert request.constraints.boundary_requirement == :fresh_only
+    assert request.target.session_mode_preference == :detached
+    assert request.target.coordination_mode_preference == :local_only
+
+    assert_raise ArgumentError,
+                 ~r/run request target.session_mode_preference must be one of/,
+                 fn ->
+                   higher_order_run_request()
+                   |> put_in([:target, :session_mode_preference], "ok")
+                   |> RunRequest.new!()
+                 end
+  end
+
   test "public host ingress persists higher-order run requests through the durable path", env do
     session_id = "sess-live-run-request"
     test_pid = self()
@@ -505,7 +552,7 @@ defmodule Citadel.HostIngressTest do
   end
 
   defp unique_name(prefix) do
-    :"#{prefix}_#{System.unique_integer([:positive])}"
+    {:global, {__MODULE__, prefix, System.unique_integer([:positive])}}
   end
 
   defp wait_until(fun, attempts \\ 40)

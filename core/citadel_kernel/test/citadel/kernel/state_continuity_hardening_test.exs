@@ -59,7 +59,7 @@ defmodule Citadel.Kernel.StateContinuityHardeningTest do
              required_min_sequence: 0
            ) do
         {:ok, %{snapshot: %{policy_epoch: 5}, drift: :none}} -> true
-        {:error, :read_surface_missing} -> false
+        {:error, _reason} -> false
       end
     end)
   end
@@ -317,7 +317,7 @@ defmodule Citadel.Kernel.StateContinuityHardeningTest do
   end
 
   defp unique_name(prefix) do
-    :"#{prefix}_#{System.unique_integer([:positive, :monotonic])}"
+    {:global, {__MODULE__, prefix, System.unique_integer([:positive, :monotonic])}}
   end
 
   defp wait_until(fun, attempts \\ 40)

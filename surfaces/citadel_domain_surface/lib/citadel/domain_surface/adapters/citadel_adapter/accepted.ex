@@ -3,6 +3,18 @@ defmodule Citadel.DomainSurface.Adapters.CitadelAdapter.Accepted do
   Typed representation of a successful Citadel command acceptance.
   """
 
+  @allowed_ingress_paths %{
+    "direct_intent_envelope" => :direct_intent_envelope,
+    "resolved_input" => :resolved_input
+  }
+  @allowed_lifecycle_events %{
+    "attached" => :attached,
+    "blocked" => :blocked,
+    "live_owner" => :live_owner,
+    "quarantined" => :quarantined,
+    "resumed" => :resumed
+  }
+
   @type attrs :: keyword() | %{optional(atom() | String.t()) => term()}
   @type metadata :: %{optional(atom()) => term()}
 
@@ -45,8 +57,8 @@ defmodule Citadel.DomainSurface.Adapters.CitadelAdapter.Accepted do
       request_id: required_string!(attrs, :request_id),
       session_id: optional_string(attrs, :session_id),
       trace_id: required_string!(attrs, :trace_id),
-      ingress_path: optional_atom(attrs, :ingress_path),
-      lifecycle_event: optional_atom(attrs, :lifecycle_event),
+      ingress_path: optional_atom(attrs, :ingress_path, @allowed_ingress_paths),
+      lifecycle_event: optional_atom(attrs, :lifecycle_event, @allowed_lifecycle_events),
       continuity_revision: optional_non_neg_integer(attrs, :continuity_revision),
       metadata:
         Map.get(attrs, :metadata, Map.get(attrs, "metadata", %{}))
@@ -76,16 +88,28 @@ defmodule Citadel.DomainSurface.Adapters.CitadelAdapter.Accepted do
     end
   end
 
-  defp optional_atom(attrs, key) do
+  defp optional_atom(attrs, key, allowed) do
     case Map.get(attrs, key, Map.get(attrs, Atom.to_string(key))) do
       nil ->
         nil
 
       value when is_atom(value) ->
-        value
+        if value in Map.values(allowed) do
+          value
+        else
+          raise ArgumentError,
+                "citadel acceptance #{inspect(key)} atom value must be one of #{inspect(Map.values(allowed))}, got: #{inspect(value)}"
+        end
 
       value when is_binary(value) and value != "" ->
-        binary_to_existing_atom!(value, key)
+        case Map.fetch(allowed, value) do
+          {:ok, atom} ->
+            atom
+
+          :error ->
+            raise ArgumentError,
+                  "citadel acceptance #{inspect(key)} string value must be one of #{inspect(Map.keys(allowed))}, got: #{inspect(value)}"
+        end
 
       value ->
         raise ArgumentError,
@@ -113,16 +137,5 @@ defmodule Citadel.DomainSurface.Adapters.CitadelAdapter.Accepted do
 
   defp normalize_metadata!(value, _extras) do
     raise ArgumentError, "citadel acceptance metadata must be a map, got: #{inspect(value)}"
-  end
-
-  defp binary_to_existing_atom!(value, key) do
-    String.to_existing_atom(value)
-  rescue
-    _error in ArgumentError ->
-      reraise ArgumentError,
-              [
-                "citadel acceptance #{inspect(key)} string value must refer to an existing atom"
-              ],
-              __STACKTRACE__
   end
 end

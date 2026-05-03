@@ -61,5 +61,6 @@ defmodule Citadel.Kernel.ObservationSignalSourceTest do
     })
   end
 
-  defp unique_name(prefix), do: :"#{prefix}_#{System.unique_integer([:positive])}"
+  defp unique_name(prefix),
+    do: {:global, {__MODULE__, prefix, System.unique_integer([:positive])}}
 end

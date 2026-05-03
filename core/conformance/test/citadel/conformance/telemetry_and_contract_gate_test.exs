@@ -183,7 +183,7 @@ defmodule Citadel.Conformance.TelemetryAndContractGateTest do
   end
 
   defp unique_name(prefix) do
-    :"#{prefix}_#{System.unique_integer([:positive])}"
+    {:global, {__MODULE__, prefix, System.unique_integer([:positive])}}
   end
 
   defp normalize_lifecycle_result({:ok, %{lifecycle_event: lifecycle_event}}) do

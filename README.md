@@ -149,7 +149,7 @@ mix hardening.governance
 
 The Wave 9 hardening posture is enforced in code and CI:
 
-- `mix lint.packet_seams` fails on `String.to_atom/1` anywhere in packet-critical workspace paths and blocks raw `map()` or `keyword()` public seam specs on the tracked ingress, bridge, runtime, and trace modules.
+- `mix lint.packet_seams` fails on unsafe string-to-atom calls anywhere in packet-critical workspace paths and blocks raw `map()` or `keyword()` public seam specs on the tracked ingress, bridge, runtime, and trace modules.
 - `mix lint.strict` runs a curated high-signal Credo config across the workspace libraries instead of style-noise checks that do not protect packet seams.
 - `mix static.analysis` also runs the `citadel_domain_surface` package-local
   seam lint and strict lint so the northbound typed boundary keeps its own

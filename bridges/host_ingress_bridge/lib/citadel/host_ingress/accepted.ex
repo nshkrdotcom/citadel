@@ -4,6 +4,17 @@ defmodule Citadel.HostIngress.Accepted do
   """
 
   @schema_version 1
+  @allowed_ingress_paths %{
+    "direct_intent_envelope" => :direct_intent_envelope,
+    "resolved_input" => :resolved_input
+  }
+  @allowed_lifecycle_events %{
+    "attached" => :attached,
+    "blocked" => :blocked,
+    "live_owner" => :live_owner,
+    "quarantined" => :quarantined,
+    "resumed" => :resumed
+  }
 
   @type attrs :: keyword() | %{optional(atom() | String.t()) => term()}
 
@@ -44,8 +55,8 @@ defmodule Citadel.HostIngress.Accepted do
       request_id: required_string!(attrs, :request_id),
       session_id: optional_string(attrs, :session_id),
       trace_id: required_string!(attrs, :trace_id),
-      ingress_path: optional_atom(attrs, :ingress_path),
-      lifecycle_event: optional_atom(attrs, :lifecycle_event),
+      ingress_path: optional_atom(attrs, :ingress_path, @allowed_ingress_paths),
+      lifecycle_event: optional_atom(attrs, :lifecycle_event, @allowed_lifecycle_events),
       continuity_revision: optional_non_neg_integer(attrs, :continuity_revision),
       entry_id: optional_string(attrs, :entry_id),
       metadata: normalize_metadata(attrs)
@@ -72,22 +83,27 @@ defmodule Citadel.HostIngress.Accepted do
     end
   end
 
-  defp optional_atom(attrs, key) do
+  defp optional_atom(attrs, key, allowed) do
     case Map.get(attrs, key, Map.get(attrs, Atom.to_string(key))) do
       nil ->
         nil
 
       value when is_atom(value) ->
-        value
+        if value in Map.values(allowed) do
+          value
+        else
+          raise ArgumentError,
+                "host ingress acceptance #{inspect(key)} atom value must be one of #{inspect(Map.values(allowed))}, got: #{inspect(value)}"
+        end
 
       value when is_binary(value) and value != "" ->
-        case existing_atom(value) do
+        case Map.fetch(allowed, value) do
           {:ok, atom} ->
             atom
 
           :error ->
             raise ArgumentError,
-                  "host ingress acceptance #{inspect(key)} string value must refer to an existing atom"
+                  "host ingress acceptance #{inspect(key)} string value must be one of #{inspect(Map.keys(allowed))}, got: #{inspect(value)}"
         end
 
       value ->
@@ -146,11 +162,5 @@ defmodule Citadel.HostIngress.Accepted do
       |> Map.drop(known_keys ++ Enum.map(known_keys, &Atom.to_string/1))
 
     Map.merge(extras, metadata)
-  end
-
-  defp existing_atom(value) when is_binary(value) do
-    {:ok, String.to_existing_atom(value)}
-  rescue
-    ArgumentError -> :error
   end
 end

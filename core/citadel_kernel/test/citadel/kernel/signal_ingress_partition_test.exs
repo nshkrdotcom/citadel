@@ -490,5 +490,6 @@ defmodule Citadel.Kernel.SignalIngressPartitionTest do
 
   defp wait_until(_fun, 0), do: flunk("condition did not become true in time")
 
-  defp unique_name(prefix), do: :"#{prefix}_#{System.unique_integer([:positive, :monotonic])}"
+  defp unique_name(prefix),
+    do: {:global, {__MODULE__, prefix, System.unique_integer([:positive, :monotonic])}}
 end

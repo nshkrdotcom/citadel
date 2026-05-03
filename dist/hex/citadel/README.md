@@ -149,7 +149,7 @@ mix hardening.governance
 
 The Wave 9 hardening posture is enforced in code and CI:
 
-- `mix lint.packet_seams` fails on `String.to_atom/1` anywhere in packet-critical workspace paths and blocks raw `map()` or `keyword()` public seam specs on the tracked ingress, bridge, runtime, and trace modules.
+- `mix lint.packet_seams` fails on unsafe string-to-atom calls anywhere in packet-critical workspace paths and blocks raw `map()` or `keyword()` public seam specs on the tracked ingress, bridge, runtime, and trace modules.
 - `mix lint.strict` runs a curated high-signal Credo config across the workspace libraries instead of style-noise checks that do not protect packet seams.
 - `mix static.analysis` also runs the `citadel_domain_surface` package-local
   seam lint and strict lint so the northbound typed boundary keeps its own
@@ -228,9 +228,9 @@ mix hardening.infrastructure_faults
 
 ## Temporal developer environment
 
-Temporal CLI is expected to be available as `temporal` on this developer workstation for local durable-workflow development. Current provisioning is machine-level dotfiles setup, not a repo-local dependency.
-
-TODO: make Temporal ergonomics explicit for developers by adding repo-local setup scripts, version expectations, and fallback instructions so the tool is not silently assumed from the workstation.
+Temporal runtime development is managed from `/home/home/p/g/n/mezzanine`
+through the repo-owned `just` workflow. Do not start ad hoc Temporal processes
+or rely on the `temporal` CLI as the implementation runbook.
 
 ## Native Temporal development substrate
 

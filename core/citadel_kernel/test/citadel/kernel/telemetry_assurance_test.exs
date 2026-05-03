@@ -388,7 +388,7 @@ defmodule Citadel.Kernel.TelemetryAssuranceTest do
   end
 
   defp unique_name(prefix) do
-    :"#{prefix}_#{System.unique_integer([:positive])}"
+    {:global, {__MODULE__, prefix, System.unique_integer([:positive])}}
   end
 
   defp wait_until(fun, attempts \\ 40)
