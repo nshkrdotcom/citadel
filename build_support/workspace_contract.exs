@@ -12,6 +12,7 @@ defmodule Citadel.Build.WorkspaceContract do
     "core/execution_governance_contract",
     "core/native_auth_assertion",
     "core/provider_auth_fabric",
+    "core/connector_binding",
     "core/conformance",
     "bridges/invocation_bridge",
     "bridges/host_ingress_bridge",

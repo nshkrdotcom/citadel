@@ -19,6 +19,7 @@ defmodule Citadel.Workspace do
     "core/execution_governance_contract",
     "core/native_auth_assertion",
     "core/provider_auth_fabric",
+    "core/connector_binding",
     "core/conformance",
     "bridges/invocation_bridge",
     "bridges/host_ingress_bridge",
@@ -76,7 +77,11 @@ defmodule Citadel.Workspace do
   @public_package_paths @package_paths -- @proof_package_paths
   @publication_artifact_id "citadel"
   @publication_manifest_path "packaging/weld/citadel.exs"
-  @publication_root_projects ["core/citadel_kernel", "core/provider_auth_fabric"]
+  @publication_root_projects [
+    "core/citadel_kernel",
+    "core/connector_binding",
+    "core/provider_auth_fabric"
+  ]
   @publication_output_docs [
     "README.md",
     "docs/README.md",

@@ -6,13 +6,14 @@ defmodule Citadel.WorkspaceTest do
   alias Weld
 
   test "tracks the packet workspace package contract on disk" do
-    assert Workspace.package_count() == 23
+    assert Workspace.package_count() == 24
     assert Workspace.package_count() == length(Workspace.package_paths())
     assert "apps/host_surface_harness" in Workspace.package_paths()
     assert "core/execution_governance_contract" in Workspace.package_paths()
     assert "core/jido_integration_contracts" in Workspace.package_paths()
     assert "core/native_auth_assertion" in Workspace.package_paths()
     assert "core/provider_auth_fabric" in Workspace.package_paths()
+    assert "core/connector_binding" in Workspace.package_paths()
     assert "bridges/host_ingress_bridge" in Workspace.package_paths()
     assert "bridges/jido_integration_bridge" in Workspace.package_paths()
     assert "surfaces/citadel_domain_surface" in Workspace.package_paths()
@@ -71,6 +72,7 @@ defmodule Citadel.WorkspaceTest do
 
     assert Workspace.publication_root_projects() == [
              "core/citadel_kernel",
+             "core/connector_binding",
              "core/provider_auth_fabric"
            ]
 
@@ -102,6 +104,7 @@ defmodule Citadel.WorkspaceTest do
     assert "apps/host_surface_harness" in result.classifications.proof
 
     assert "core/citadel_kernel" in result.artifact.selected_projects
+    assert "core/connector_binding" in result.artifact.selected_projects
     assert "core/provider_auth_fabric" in result.artifact.selected_projects
     assert "core/native_auth_assertion" in result.artifact.selected_projects
     assert "core/jido_integration_contracts" in result.artifact.selected_projects
