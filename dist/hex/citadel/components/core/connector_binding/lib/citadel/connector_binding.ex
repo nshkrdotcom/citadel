@@ -223,6 +223,26 @@ defmodule Citadel.ConnectorBinding do
     }
   end
 
+  @spec authorize_lease(binding(), map() | keyword()) :: :ok | {:error, term()}
+  def authorize_lease(%Binding{} = binding, attrs) when is_map(attrs) or is_list(attrs) do
+    attrs = normalize(attrs)
+
+    with :ok <- reject_material(attrs),
+         :ok <- require_refs(attrs, lease_scope_fields()),
+         :ok <- validate_ref_families(attrs, lease_scope_fields()) do
+      mismatches =
+        lease_scope_fields()
+        |> Enum.reject(fn field ->
+          Map.fetch!(Map.from_struct(binding), field) == field_value(attrs, field)
+        end)
+
+      case mismatches do
+        [] -> :ok
+        fields -> {:error, {:lease_scope_mismatch, fields}}
+      end
+    end
+  end
+
   defp normalize(attrs) when is_list(attrs), do: attrs |> Map.new() |> normalize()
 
   defp normalize(attrs) when is_map(attrs) do
@@ -369,4 +389,19 @@ defmodule Citadel.ConnectorBinding do
 
   defp present?(value) when is_binary(value), do: String.trim(value) != ""
   defp present?(value), do: not is_nil(value)
+
+  defp lease_scope_fields do
+    [
+      :tenant_ref,
+      :policy_revision_ref,
+      :provider_account_ref,
+      :connector_instance_ref,
+      :connector_binding_ref,
+      :credential_handle_ref,
+      :credential_lease_ref,
+      :target_ref,
+      :attach_grant_ref,
+      :operation_policy_ref
+    ]
+  end
 end

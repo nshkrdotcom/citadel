@@ -125,6 +125,38 @@ defmodule Citadel.ConnectorBindingTest do
              |> ConnectorBinding.bind()
   end
 
+  test "authorizes credential leases only when binding scope aligns" do
+    assert {:ok, binding} = ConnectorBinding.bind(valid_attrs())
+
+    assert :ok = ConnectorBinding.authorize_lease(binding, lease_scope())
+
+    assert {:error, {:lease_scope_mismatch, [:provider_account_ref]}} =
+             ConnectorBinding.authorize_lease(
+               binding,
+               Map.put(
+                 lease_scope(),
+                 :provider_account_ref,
+                 "provider-account://tenant-1/codex/account-b"
+               )
+             )
+
+    assert {:error, {:lease_scope_mismatch, [:credential_handle_ref]}} =
+             ConnectorBinding.authorize_lease(
+               binding,
+               Map.put(
+                 lease_scope(),
+                 :credential_handle_ref,
+                 "credential-handle://tenant-1/codex/account-b/primary"
+               )
+             )
+
+    assert {:error, {:lease_scope_mismatch, [:policy_revision_ref]}} =
+             ConnectorBinding.authorize_lease(
+               binding,
+               Map.put(lease_scope(), :policy_revision_ref, "policy-revision://tenant-1/auth/2")
+             )
+  end
+
   defp valid_attrs do
     %{
       tenant_ref: "tenant://tenant-1",
@@ -144,6 +176,21 @@ defmodule Citadel.ConnectorBindingTest do
       redaction_ref: "redaction://tenant-1/connector-binding/1",
       lifecycle: :validated,
       metadata: %{identity_introspection: :ref_only}
+    }
+  end
+
+  defp lease_scope do
+    %{
+      tenant_ref: "tenant://tenant-1",
+      policy_revision_ref: "policy-revision://tenant-1/auth/1",
+      provider_account_ref: "provider-account://tenant-1/codex/account-a",
+      connector_instance_ref: "connector-instance://tenant-1/codex/default",
+      connector_binding_ref: "connector-binding://tenant-1/codex/default",
+      credential_handle_ref: "credential-handle://tenant-1/codex/account-a/primary",
+      credential_lease_ref: "credential-lease://tenant-1/codex/account-a/lease-1",
+      target_ref: "target://tenant-1/sandbox/a",
+      attach_grant_ref: "attach-grant://tenant-1/sandbox/a",
+      operation_policy_ref: "operation-policy://tenant-1/codex/chat"
     }
   end
 end

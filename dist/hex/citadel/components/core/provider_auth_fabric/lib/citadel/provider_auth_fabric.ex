@@ -19,6 +19,8 @@ defmodule Citadel.ProviderAuthFabric do
     "realtime"
   ]
 
+  @operation_classes ["cli", "http", "graphql", "realtime", "inference"]
+
   @authority_required_refs [
     :authority_packet_ref,
     :system_actor_ref,
@@ -63,7 +65,13 @@ defmodule Citadel.ProviderAuthFabric do
     authority_packet_ref: "authority-packet://",
     policy_revision_ref: "policy-revision://",
     redaction_ref: "redaction://",
-    native_auth_assertion_ref: "native-auth-assertion://"
+    native_auth_assertion_ref: "native-auth-assertion://",
+    tenant_ref: "tenant://",
+    subject_ref: "subject://",
+    target_grant_revision: "target-grant-revision://",
+    fence_token: "fence://",
+    revocation_ref: "revocation://",
+    cleanup_ref: "cleanup://"
   }
 
   defmodule Registration do
@@ -101,14 +109,23 @@ defmodule Citadel.ProviderAuthFabric do
     @enforce_keys [
       :credential_lease_ref,
       :credential_handle_ref,
+      :tenant_ref,
+      :subject_ref,
+      :provider_family,
       :provider_account_ref,
+      :connector_instance_ref,
+      :operation_class,
       :target_ref,
       :attach_grant_ref,
       :operation_policy_ref,
       :authority_packet_ref,
+      :policy_revision_ref,
+      :target_grant_revision,
+      :rotation_epoch,
+      :fence_token,
       :expires_at
     ]
-    defstruct @enforce_keys ++ [status: :issued, metadata: %{}]
+    defstruct @enforce_keys ++ [renewed_from_lease_ref: nil, status: :issued, metadata: %{}]
   end
 
   @spec provider_families() :: [String.t()]
@@ -181,24 +198,188 @@ defmodule Citadel.ProviderAuthFabric do
     merged =
       attrs
       |> Map.put_new(:credential_handle_ref, handle.credential_handle_ref)
+      |> Map.put_new(:provider_family, handle.provider_family)
       |> Map.put_new(:provider_account_ref, handle.provider_account_ref)
+      |> Map.put_new(:connector_instance_ref, handle.connector_instance_ref)
       |> Map.put_new(:operation_policy_ref, handle.operation_policy_ref)
 
     with :ok <- reject_material(merged),
          :ok <- require_refs(merged, credential_lease_required_refs()),
+         :ok <- validate_provider_family(merged),
+         :ok <- validate_operation_class(merged),
          :ok <- validate_ref_families(merged, credential_lease_required_refs()) do
+      {:ok, build_lease(merged, :issued)}
+    end
+  end
+
+  @spec redeem_lease(CredentialLease.t(), map() | keyword()) :: {:ok, map()} | {:error, term()}
+  def redeem_lease(%CredentialLease{} = lease, attrs) do
+    attrs = normalize(attrs)
+
+    with :ok <- reject_material(attrs),
+         :ok <- require_refs(attrs, redemption_required_refs()),
+         :ok <- ensure_lease_redeemable(lease, attrs),
+         :ok <- compare_scope(lease, attrs, :tenant_ref, :tenant_mismatch),
+         :ok <- compare_scope(lease, attrs, :subject_ref, :subject_mismatch),
+         :ok <- compare_scope(lease, attrs, :provider_family, :provider_family_mismatch),
+         :ok <- compare_scope(lease, attrs, :provider_account_ref, :provider_account_mismatch),
+         :ok <- compare_scope(lease, attrs, :connector_instance_ref, :connector_mismatch),
+         :ok <- compare_scope(lease, attrs, :credential_handle_ref, :credential_handle_mismatch),
+         :ok <- compare_scope(lease, attrs, :operation_class, :operation_class_mismatch),
+         :ok <- compare_scope(lease, attrs, :target_ref, :target_mismatch),
+         :ok <- compare_scope(lease, attrs, :attach_grant_ref, :attach_grant_mismatch),
+         :ok <-
+           compare_scope(lease, attrs, :operation_policy_ref, :operation_policy_mismatch),
+         :ok <- compare_scope(lease, attrs, :policy_revision_ref, :stale_policy_revision),
+         :ok <- compare_scope(lease, attrs, :target_grant_revision, :stale_target_grant),
+         :ok <- compare_scope(lease, attrs, :rotation_epoch, :stale_rotation_epoch),
+         :ok <- compare_scope(lease, attrs, :fence_token, :fence_token_mismatch) do
       {:ok,
-       %CredentialLease{
-         credential_lease_ref: value!(merged, :credential_lease_ref),
-         credential_handle_ref: value!(merged, :credential_handle_ref),
-         provider_account_ref: value!(merged, :provider_account_ref),
-         target_ref: value!(merged, :target_ref),
-         attach_grant_ref: value!(merged, :attach_grant_ref),
-         operation_policy_ref: value!(merged, :operation_policy_ref),
-         authority_packet_ref: value!(merged, :authority_packet_ref),
-         expires_at: value!(merged, :expires_at),
-         metadata: safe_metadata(field_value(merged, :metadata))
+       %{
+         event: "provider_auth.lease.redeemed",
+         credential_lease_ref: lease.credential_lease_ref,
+         credential_handle_ref: lease.credential_handle_ref,
+         tenant_ref: lease.tenant_ref,
+         subject_ref: lease.subject_ref,
+         provider_family: lease.provider_family,
+         provider_account_ref: lease.provider_account_ref,
+         connector_instance_ref: lease.connector_instance_ref,
+         operation_class: lease.operation_class,
+         target_ref: lease.target_ref,
+         attach_grant_ref: lease.attach_grant_ref,
+         operation_policy_ref: lease.operation_policy_ref,
+         policy_revision_ref: lease.policy_revision_ref,
+         target_grant_revision: lease.target_grant_revision,
+         rotation_epoch: lease.rotation_epoch,
+         fence_token: lease.fence_token,
+         redacted: true
        }}
+    end
+  end
+
+  @spec renew_lease(CredentialLease.t(), map() | keyword()) ::
+          {:ok, CredentialLease.t()} | {:error, term()}
+  def renew_lease(%CredentialLease{} = lease, attrs) do
+    attrs = normalize(attrs)
+
+    merged =
+      lease
+      |> Map.from_struct()
+      |> Map.merge(attrs)
+      |> Map.put_new(:renewed_from_lease_ref, lease.credential_lease_ref)
+      |> Map.put(:status, :renewed)
+
+    with :ok <- reject_material(merged),
+         :ok <- require_refs(merged, credential_lease_required_refs()),
+         :ok <- validate_provider_family(merged),
+         :ok <- validate_operation_class(merged),
+         :ok <- validate_ref_families(merged, credential_lease_required_refs()) do
+      {:ok, build_lease(merged, :renewed, lease.credential_lease_ref)}
+    end
+  end
+
+  @spec revoke_lease(CredentialLease.t(), map() | keyword()) :: {:ok, map()} | {:error, term()}
+  def revoke_lease(%CredentialLease{} = lease, attrs) do
+    attrs = normalize(attrs)
+
+    with :ok <- reject_material(attrs),
+         :ok <-
+           require_refs(attrs, [
+             :authority_packet_ref,
+             :system_authorization_ref,
+             :revocation_ref,
+             :revoked_at
+           ]),
+         :ok <-
+           validate_ref_families(attrs, [
+             :authority_packet_ref,
+             :system_authorization_ref,
+             :revocation_ref
+           ]) do
+      {:ok,
+       %{
+         event: "provider_auth.lease.revoked",
+         credential_lease_ref: lease.credential_lease_ref,
+         credential_handle_ref: lease.credential_handle_ref,
+         provider_account_ref: lease.provider_account_ref,
+         authority_packet_ref: value!(attrs, :authority_packet_ref),
+         system_authorization_ref: value!(attrs, :system_authorization_ref),
+         revocation_ref: value!(attrs, :revocation_ref),
+         revoked_at: value!(attrs, :revoked_at),
+         status: :revoked,
+         redacted: true
+       }}
+    end
+  end
+
+  @spec cleanup_lease(CredentialLease.t(), map() | keyword()) :: {:ok, map()} | {:error, term()}
+  def cleanup_lease(%CredentialLease{} = lease, attrs) do
+    attrs = normalize(attrs)
+
+    with :ok <- reject_material(attrs),
+         :ok <- require_refs(attrs, [:cleanup_ref, :cleaned_at]),
+         :ok <- validate_ref_families(attrs, [:cleanup_ref]) do
+      {:ok,
+       %{
+         event: "provider_auth.lease.cleaned",
+         credential_lease_ref: lease.credential_lease_ref,
+         credential_handle_ref: lease.credential_handle_ref,
+         provider_account_ref: lease.provider_account_ref,
+         cleanup_ref: value!(attrs, :cleanup_ref),
+         cleaned_at: value!(attrs, :cleaned_at),
+         status: :cleaned,
+         redacted: true
+       }}
+    end
+  end
+
+  @spec audit_lease_event(String.t(), CredentialLease.t(), map() | keyword()) ::
+          {:ok, map()} | {:error, term()}
+  def audit_lease_event(event_name, %CredentialLease{} = lease, attrs \\ [])
+      when is_binary(event_name) and event_name != "" do
+    attrs = normalize(attrs)
+
+    with :ok <- reject_material(Map.drop(attrs, [:metadata])) do
+      {:ok,
+       %{
+         event: event_name,
+         credential_lease_ref: lease.credential_lease_ref,
+         credential_handle_ref: lease.credential_handle_ref,
+         provider_account_ref: lease.provider_account_ref,
+         target_ref: lease.target_ref,
+         operation_class: lease.operation_class,
+         redaction_ref: field_value(attrs, :redaction_ref),
+         metadata: safe_event_metadata(field_value(attrs, :metadata)),
+         redacted: true
+       }
+       |> drop_empty_values()}
+    end
+  end
+
+  @spec fence_event(CredentialLease.t(), map() | keyword()) :: {:ok, map()} | {:error, term()}
+  def fence_event(%CredentialLease{} = lease, attrs \\ []) do
+    attrs = normalize(attrs)
+
+    with :ok <- reject_material(attrs) do
+      {:ok,
+       %{
+         event: "provider_auth.lease.fenced",
+         credential_lease_ref: lease.credential_lease_ref,
+         credential_handle_ref: lease.credential_handle_ref,
+         tenant_ref: lease.tenant_ref,
+         provider_family: lease.provider_family,
+         provider_account_ref: lease.provider_account_ref,
+         target_ref: lease.target_ref,
+         attach_grant_ref: lease.attach_grant_ref,
+         operation_policy_ref: lease.operation_policy_ref,
+         policy_revision_ref: lease.policy_revision_ref,
+         target_grant_revision: lease.target_grant_revision,
+         rotation_epoch: lease.rotation_epoch,
+         fence_token: lease.fence_token,
+         checked_at: field_value(attrs, :checked_at),
+         redacted: true
+       }
+       |> drop_empty_values()}
     end
   end
 
@@ -290,12 +471,41 @@ defmodule Citadel.ProviderAuthFabric do
     [
       :credential_lease_ref,
       :credential_handle_ref,
+      :tenant_ref,
+      :subject_ref,
+      :provider_family,
       :provider_account_ref,
+      :connector_instance_ref,
+      :operation_class,
       :target_ref,
       :attach_grant_ref,
       :operation_policy_ref,
       :authority_packet_ref,
+      :policy_revision_ref,
+      :target_grant_revision,
+      :rotation_epoch,
+      :fence_token,
       :expires_at
+    ]
+  end
+
+  defp redemption_required_refs do
+    [
+      :tenant_ref,
+      :subject_ref,
+      :provider_family,
+      :provider_account_ref,
+      :connector_instance_ref,
+      :credential_handle_ref,
+      :operation_class,
+      :target_ref,
+      :attach_grant_ref,
+      :operation_policy_ref,
+      :policy_revision_ref,
+      :target_grant_revision,
+      :rotation_epoch,
+      :fence_token,
+      :now
     ]
   end
 
@@ -304,6 +514,64 @@ defmodule Citadel.ProviderAuthFabric do
       :ok
     else
       {:error, {:unsupported_provider_family, field_value(attrs, :provider_family)}}
+    end
+  end
+
+  defp validate_operation_class(attrs) do
+    if field_value(attrs, :operation_class) in @operation_classes do
+      :ok
+    else
+      {:error, {:unsupported_operation_class, field_value(attrs, :operation_class)}}
+    end
+  end
+
+  defp build_lease(attrs, status, renewed_from_lease_ref \\ nil) do
+    %CredentialLease{
+      credential_lease_ref: value!(attrs, :credential_lease_ref),
+      credential_handle_ref: value!(attrs, :credential_handle_ref),
+      tenant_ref: value!(attrs, :tenant_ref),
+      subject_ref: value!(attrs, :subject_ref),
+      provider_family: value!(attrs, :provider_family),
+      provider_account_ref: value!(attrs, :provider_account_ref),
+      connector_instance_ref: value!(attrs, :connector_instance_ref),
+      operation_class: value!(attrs, :operation_class),
+      target_ref: value!(attrs, :target_ref),
+      attach_grant_ref: value!(attrs, :attach_grant_ref),
+      operation_policy_ref: value!(attrs, :operation_policy_ref),
+      authority_packet_ref: value!(attrs, :authority_packet_ref),
+      policy_revision_ref: value!(attrs, :policy_revision_ref),
+      target_grant_revision: value!(attrs, :target_grant_revision),
+      rotation_epoch: value!(attrs, :rotation_epoch),
+      fence_token: value!(attrs, :fence_token),
+      expires_at: value!(attrs, :expires_at),
+      renewed_from_lease_ref:
+        renewed_from_lease_ref || field_value(attrs, :renewed_from_lease_ref),
+      status: status,
+      metadata: safe_metadata(field_value(attrs, :metadata))
+    }
+  end
+
+  defp ensure_lease_redeemable(%CredentialLease{status: :revoked}, _attrs),
+    do: {:error, :revoked_lease}
+
+  defp ensure_lease_redeemable(%CredentialLease{status: :rotated}, _attrs),
+    do: {:error, :rotated_lease}
+
+  defp ensure_lease_redeemable(%CredentialLease{} = lease, attrs) do
+    now = field_value(attrs, :now)
+
+    if match?(%DateTime{}, now) and DateTime.compare(lease.expires_at, now) != :gt do
+      {:error, :expired_lease}
+    else
+      :ok
+    end
+  end
+
+  defp compare_scope(%CredentialLease{} = lease, attrs, field, reason) do
+    if Map.fetch!(Map.from_struct(lease), field) == field_value(attrs, field) do
+      :ok
+    else
+      {:error, reason}
     end
   end
 
@@ -364,9 +632,15 @@ defmodule Citadel.ProviderAuthFabric do
 
   defp value!(attrs, field) do
     case field_value(attrs, field) do
-      value when is_binary(value) and value != "" -> value
-      value when field == :expires_at and not is_nil(value) -> value
-      value -> raise ArgumentError, "#{field} must be present, got: #{inspect(value)}"
+      value when is_binary(value) and value != "" ->
+        value
+
+      value
+      when field in [:expires_at, :rotation_epoch, :revoked_at, :cleaned_at] and not is_nil(value) ->
+        value
+
+      value ->
+        raise ArgumentError, "#{field} must be present, got: #{inspect(value)}"
     end
   end
 
@@ -376,6 +650,18 @@ defmodule Citadel.ProviderAuthFabric do
 
   defp safe_metadata(metadata) when is_map(metadata), do: metadata
   defp safe_metadata(_metadata), do: %{}
+
+  defp safe_event_metadata(metadata) when is_map(metadata) do
+    Map.drop(metadata, @forbidden_material ++ Enum.map(@forbidden_material, &Atom.to_string/1))
+  end
+
+  defp safe_event_metadata(_metadata), do: %{}
+
+  defp drop_empty_values(map) do
+    map
+    |> Enum.reject(fn {_key, value} -> value in [nil, [], %{}] end)
+    |> Map.new()
+  end
 
   defp present?(nil), do: false
   defp present?(""), do: false
