@@ -24,8 +24,10 @@ defmodule Citadel.MixProject do
         "components/core/contract_core/src",
         "components/core/execution_governance_contract/src",
         "components/core/jido_integration_contracts/src",
+        "components/core/native_auth_assertion/src",
         "components/core/observability_contract/src",
-        "components/core/policy_packs/src"
+        "components/core/policy_packs/src",
+        "components/core/provider_auth_fabric/src"
       ],
       deps: deps(),
       description:
@@ -57,8 +59,10 @@ defmodule Citadel.MixProject do
       "components/core/contract_core/lib",
       "components/core/execution_governance_contract/lib",
       "components/core/jido_integration_contracts/lib",
+      "components/core/native_auth_assertion/lib",
       "components/core/observability_contract/lib",
-      "components/core/policy_packs/lib"
+      "components/core/policy_packs/lib",
+      "components/core/provider_auth_fabric/lib"
     ]
 
     if File.dir?("test/support") do
@@ -86,8 +90,10 @@ defmodule Citadel.MixProject do
       "components/core/contract_core/lib",
       "components/core/execution_governance_contract/lib",
       "components/core/jido_integration_contracts/lib",
+      "components/core/native_auth_assertion/lib",
       "components/core/observability_contract/lib",
-      "components/core/policy_packs/lib"
+      "components/core/policy_packs/lib",
+      "components/core/provider_auth_fabric/lib"
     ]
 
   defp deps do
@@ -133,8 +139,10 @@ defmodule Citadel.MixProject do
         "components/core/contract_core",
         "components/core/execution_governance_contract",
         "components/core/jido_integration_contracts",
+        "components/core/native_auth_assertion",
         "components/core/observability_contract",
         "components/core/policy_packs",
+        "components/core/provider_auth_fabric",
         "config",
         "docs/README.md",
         "docs/publication.md",

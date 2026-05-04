@@ -6,10 +6,13 @@ defmodule Citadel.WorkspaceTest do
   alias Weld
 
   test "tracks the packet workspace package contract on disk" do
-    assert Workspace.package_count() == 20
+    assert Workspace.package_count() == 23
     assert Workspace.package_count() == length(Workspace.package_paths())
     assert "apps/host_surface_harness" in Workspace.package_paths()
+    assert "core/execution_governance_contract" in Workspace.package_paths()
     assert "core/jido_integration_contracts" in Workspace.package_paths()
+    assert "core/native_auth_assertion" in Workspace.package_paths()
+    assert "core/provider_auth_fabric" in Workspace.package_paths()
     assert "bridges/host_ingress_bridge" in Workspace.package_paths()
     assert "bridges/jido_integration_bridge" in Workspace.package_paths()
     assert "surfaces/citadel_domain_surface" in Workspace.package_paths()
@@ -65,7 +68,11 @@ defmodule Citadel.WorkspaceTest do
     assert Workspace.surface_package_paths() == ["surfaces/citadel_domain_surface"]
     assert Workspace.publication_artifact_id() == "citadel"
     assert Workspace.publication_manifest_path() == "packaging/weld/citadel.exs"
-    assert Workspace.publication_root_projects() == ["core/citadel_kernel"]
+
+    assert Workspace.publication_root_projects() == [
+             "core/citadel_kernel",
+             "core/provider_auth_fabric"
+           ]
 
     assert Enum.sort(Workspace.public_bridge_package_paths()) ==
              Enum.sort(
@@ -95,6 +102,8 @@ defmodule Citadel.WorkspaceTest do
     assert "apps/host_surface_harness" in result.classifications.proof
 
     assert "core/citadel_kernel" in result.artifact.selected_projects
+    assert "core/provider_auth_fabric" in result.artifact.selected_projects
+    assert "core/native_auth_assertion" in result.artifact.selected_projects
     assert "core/jido_integration_contracts" in result.artifact.selected_projects
     assert "bridges/host_ingress_bridge" in result.artifact.selected_projects
     assert "bridges/jido_integration_bridge" in result.artifact.selected_projects

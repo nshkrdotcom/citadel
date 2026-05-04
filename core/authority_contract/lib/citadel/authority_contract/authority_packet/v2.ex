@@ -28,6 +28,21 @@ defmodule Citadel.AuthorityContract.AuthorityPacket.V2 do
     :environment_ref,
     :principal_ref,
     :system_actor_ref,
+    :system_authorization_ref,
+    :provider_family,
+    :provider_ref,
+    :provider_account_ref,
+    :connector_instance_ref,
+    :connector_binding_ref,
+    :credential_handle_ref,
+    :credential_lease_ref,
+    :native_auth_assertion_ref,
+    :operation_policy_ref,
+    :operation_scope_ref,
+    :target_ref,
+    :attach_grant_ref,
+    :authority_decision_ref,
+    :redaction_ref,
     :resource_ref,
     :subject_ref,
     :action,
@@ -49,7 +64,27 @@ defmodule Citadel.AuthorityContract.AuthorityPacket.V2 do
     :extensions
   ]
 
-  @enforce_keys @fields -- [:principal_ref, :system_actor_ref]
+  @phase2_optional_refs [
+    :principal_ref,
+    :system_actor_ref,
+    :system_authorization_ref,
+    :provider_family,
+    :provider_ref,
+    :provider_account_ref,
+    :connector_instance_ref,
+    :connector_binding_ref,
+    :credential_handle_ref,
+    :credential_lease_ref,
+    :native_auth_assertion_ref,
+    :operation_policy_ref,
+    :operation_scope_ref,
+    :target_ref,
+    :attach_grant_ref,
+    :authority_decision_ref,
+    :redaction_ref
+  ]
+
+  @enforce_keys @fields -- @phase2_optional_refs
   defstruct @fields
 
   @type json_ref :: String.t() | %{required(String.t()) => CanonicalJson.value()}
@@ -66,6 +101,21 @@ defmodule Citadel.AuthorityContract.AuthorityPacket.V2 do
           environment_ref: json_ref(),
           principal_ref: json_ref() | nil,
           system_actor_ref: json_ref() | nil,
+          system_authorization_ref: json_ref() | nil,
+          provider_family: String.t() | nil,
+          provider_ref: json_ref() | nil,
+          provider_account_ref: json_ref() | nil,
+          connector_instance_ref: json_ref() | nil,
+          connector_binding_ref: json_ref() | nil,
+          credential_handle_ref: json_ref() | nil,
+          credential_lease_ref: json_ref() | nil,
+          native_auth_assertion_ref: json_ref() | nil,
+          operation_policy_ref: json_ref() | nil,
+          operation_scope_ref: json_ref() | nil,
+          target_ref: json_ref() | nil,
+          attach_grant_ref: json_ref() | nil,
+          authority_decision_ref: json_ref() | nil,
+          redaction_ref: json_ref() | nil,
           resource_ref: json_ref(),
           subject_ref: json_ref(),
           action: String.t(),
@@ -216,6 +266,21 @@ defmodule Citadel.AuthorityContract.AuthorityPacket.V2 do
         attrs |> AttrMap.fetch!(:environment_ref, @packet_name) |> ref!(:environment_ref),
       principal_ref: principal_ref,
       system_actor_ref: system_actor_ref,
+      system_authorization_ref: optional_ref(attrs, :system_authorization_ref),
+      provider_family: optional_string(attrs, :provider_family),
+      provider_ref: optional_ref(attrs, :provider_ref),
+      provider_account_ref: optional_ref(attrs, :provider_account_ref),
+      connector_instance_ref: optional_ref(attrs, :connector_instance_ref),
+      connector_binding_ref: optional_ref(attrs, :connector_binding_ref),
+      credential_handle_ref: optional_ref(attrs, :credential_handle_ref),
+      credential_lease_ref: optional_ref(attrs, :credential_lease_ref),
+      native_auth_assertion_ref: optional_ref(attrs, :native_auth_assertion_ref),
+      operation_policy_ref: optional_ref(attrs, :operation_policy_ref),
+      operation_scope_ref: optional_ref(attrs, :operation_scope_ref),
+      target_ref: optional_ref(attrs, :target_ref),
+      attach_grant_ref: optional_ref(attrs, :attach_grant_ref),
+      authority_decision_ref: optional_ref(attrs, :authority_decision_ref),
+      redaction_ref: optional_ref(attrs, :redaction_ref),
       resource_ref: attrs |> AttrMap.fetch!(:resource_ref, @packet_name) |> ref!(:resource_ref),
       subject_ref: attrs |> AttrMap.fetch!(:subject_ref, @packet_name) |> ref!(:subject_ref),
       action: attrs |> AttrMap.fetch!(:action, @packet_name) |> string!(:action),
@@ -268,6 +333,13 @@ defmodule Citadel.AuthorityContract.AuthorityPacket.V2 do
     case AttrMap.get(attrs, key) do
       nil -> nil
       value -> ref!(value, key)
+    end
+  end
+
+  defp optional_string(attrs, key) do
+    case AttrMap.get(attrs, key) do
+      nil -> nil
+      value -> string!(value, key)
     end
   end
 

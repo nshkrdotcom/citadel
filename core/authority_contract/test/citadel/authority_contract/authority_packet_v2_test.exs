@@ -44,6 +44,37 @@ defmodule Citadel.AuthorityContract.AuthorityPacket.V2Test do
     end
   end
 
+  test "carries Phase 2 ref families without materialized provider secrets" do
+    packet =
+      sample_attrs()
+      |> Map.merge(%{
+        system_authorization_ref: "system-authority://tenant/operator/a",
+        provider_family: "codex",
+        provider_ref: "provider://codex",
+        provider_account_ref: "provider-account://tenant/codex/a",
+        connector_instance_ref: "connector-instance://tenant/codex/a",
+        connector_binding_ref: "connector-binding://tenant/codex/a",
+        credential_handle_ref: "credential-handle://tenant/codex/a",
+        credential_lease_ref: "credential-lease://tenant/codex/a/1",
+        native_auth_assertion_ref: "native-auth-assertion://codex/root-a",
+        operation_policy_ref: "operation-policy://tenant/codex/run",
+        operation_scope_ref: "operation-scope://tenant/codex/run",
+        target_ref: "target://sandbox/a",
+        attach_grant_ref: "attach-grant://tenant/sandbox/a",
+        authority_decision_ref: "authority-decision://tenant/run/a",
+        redaction_ref: "redaction://tenant/policy/a"
+      })
+      |> V2.put_hashes!()
+
+    dumped = V2.dump(packet)
+
+    assert dumped.system_authorization_ref == "system-authority://tenant/operator/a"
+    assert dumped.provider_account_ref == "provider-account://tenant/codex/a"
+    assert dumped.credential_handle_ref == "credential-handle://tenant/codex/a"
+    assert dumped.attach_grant_ref == "attach-grant://tenant/sandbox/a"
+    refute inspect(dumped) =~ "sk-live"
+  end
+
   test "rejects oversized authority packet hash input before canonical JSON encoding" do
     attrs =
       sample_attrs()
