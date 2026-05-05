@@ -6,6 +6,8 @@ defmodule Citadel.Kernel.TracePublisherTest do
   alias Citadel.TraceEnvelope
   alias Citadel.Kernel.TracePublisher
 
+  @publisher_name Citadel.Kernel.TracePublisherTest.Publisher
+
   defmodule TelemetryForwarder do
     def handle_event(event, measurements, metadata, test_pid) do
       send(test_pid, {:telemetry, event, measurements, metadata})
@@ -326,8 +328,7 @@ defmodule Citadel.Kernel.TracePublisherTest do
   end
 
   defp start_trace_publisher(opts) do
-    name = :"trace_publisher_#{System.unique_integer([:positive])}"
-    start_supervised!({TracePublisher, Keyword.put(opts, :name, name)})
+    start_supervised!({TracePublisher, Keyword.put(opts, :name, @publisher_name)})
   end
 
   defp attach_telemetry(test_pid) do
