@@ -1,5 +1,8 @@
 defmodule Citadel.Build.DependencyResolver do
-  @moduledoc false
+  @moduledoc """
+  Centralized workspace dependency resolver for Citadel packages and Weld
+  projections.
+  """
 
   @repo_root Path.expand("../../..", __DIR__)
   @default_jido_integration_contracts_path Path.expand(

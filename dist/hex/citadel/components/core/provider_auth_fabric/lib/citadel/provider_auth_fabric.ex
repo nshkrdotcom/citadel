@@ -75,7 +75,7 @@ defmodule Citadel.ProviderAuthFabric do
   }
 
   defmodule Registration do
-    @moduledoc false
+    @moduledoc "Provider account registration reference bundle."
     @enforce_keys [
       :registration_ref,
       :system_actor_ref,
@@ -88,10 +88,12 @@ defmodule Citadel.ProviderAuthFabric do
       :redaction_ref
     ]
     defstruct @enforce_keys ++ [native_auth_assertion_ref: nil, metadata: %{}]
+
+    @type t :: %__MODULE__{}
   end
 
   defmodule CredentialHandle do
-    @moduledoc false
+    @moduledoc "Non-secret provider credential handle reference bundle."
     @enforce_keys [
       :credential_handle_ref,
       :registration_ref,
@@ -102,10 +104,12 @@ defmodule Citadel.ProviderAuthFabric do
       :redaction_ref
     ]
     defstruct @enforce_keys ++ [status: :active, metadata: %{}]
+
+    @type t :: %__MODULE__{}
   end
 
   defmodule CredentialLease do
-    @moduledoc false
+    @moduledoc "Non-secret provider credential lease reference bundle."
     @enforce_keys [
       :credential_lease_ref,
       :credential_handle_ref,
@@ -126,6 +130,8 @@ defmodule Citadel.ProviderAuthFabric do
       :expires_at
     ]
     defstruct @enforce_keys ++ [renewed_from_lease_ref: nil, status: :issued, metadata: %{}]
+
+    @type t :: %__MODULE__{}
   end
 
   @spec provider_families() :: [String.t()]

@@ -152,8 +152,8 @@ defmodule Citadel.Workspace.MixProject do
       source_url: @source_url,
       homepage_url: @source_url,
       extras: [
-        "README.md",
-        "docs/README.md",
+        {"README.md", filename: "readme"},
+        {"docs/README.md", filename: "docs-readme"},
         "docs/workspace_topology.md",
         "docs/publication.md",
         "docs/shared_contract_dependency_strategy.md",
