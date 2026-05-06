@@ -814,12 +814,273 @@ defmodule Citadel.PolicyPacks.GuardrailChainPolicy do
   end
 end
 
+defmodule Citadel.PolicyPacks.BudgetOverridePermission do
+  @moduledoc """
+  Bounded operator budget override permission.
+  """
+
+  alias Citadel.ContractCore.Value
+
+  @budget_classes ["production", "replay", "eval", "simulation", "infrastructure"]
+  @schema [
+    permission_ref: :string,
+    operator_role_refs: {:list, :string},
+    budget_classes: {:list, :string},
+    max_duration_seconds: :non_neg_integer,
+    extensions: {:map, :json}
+  ]
+  @fields Keyword.keys(@schema)
+
+  @type t :: %__MODULE__{
+          permission_ref: String.t(),
+          operator_role_refs: [String.t()],
+          budget_classes: [String.t()],
+          max_duration_seconds: pos_integer(),
+          extensions: map()
+        }
+
+  @enforce_keys @fields
+  defstruct @fields
+
+  def schema, do: @schema
+
+  def new!(%__MODULE__{} = permission) do
+    permission
+    |> dump()
+    |> new!()
+  end
+
+  def new!(attrs) do
+    attrs = Value.normalize_attrs!(attrs, "Citadel.PolicyPacks.BudgetOverridePermission", @fields)
+
+    permission = %__MODULE__{
+      permission_ref:
+        Value.required(
+          attrs,
+          :permission_ref,
+          "Citadel.PolicyPacks.BudgetOverridePermission",
+          fn value ->
+            Value.string!(value, "Citadel.PolicyPacks.BudgetOverridePermission.permission_ref")
+          end
+        ),
+      operator_role_refs:
+        Value.required(
+          attrs,
+          :operator_role_refs,
+          "Citadel.PolicyPacks.BudgetOverridePermission",
+          fn value ->
+            Value.unique_strings!(
+              value,
+              "Citadel.PolicyPacks.BudgetOverridePermission.operator_role_refs",
+              allow_empty?: false
+            )
+          end
+        ),
+      budget_classes: budget_classes(attrs),
+      max_duration_seconds:
+        Value.required(
+          attrs,
+          :max_duration_seconds,
+          "Citadel.PolicyPacks.BudgetOverridePermission",
+          fn value ->
+            Value.positive_integer!(
+              value,
+              "Citadel.PolicyPacks.BudgetOverridePermission.max_duration_seconds"
+            )
+          end
+        ),
+      extensions:
+        Value.optional(
+          attrs,
+          :extensions,
+          "Citadel.PolicyPacks.BudgetOverridePermission",
+          fn value ->
+            Value.json_object!(value, "Citadel.PolicyPacks.BudgetOverridePermission.extensions")
+          end,
+          %{}
+        )
+    }
+
+    if permission.max_duration_seconds <= 3_600 do
+      permission
+    else
+      raise ArgumentError,
+            "Citadel.PolicyPacks.BudgetOverridePermission.max_duration_seconds must be bounded"
+    end
+  end
+
+  def dump(%__MODULE__{} = permission) do
+    %{
+      permission_ref: permission.permission_ref,
+      operator_role_refs: permission.operator_role_refs,
+      budget_classes: permission.budget_classes,
+      max_duration_seconds: permission.max_duration_seconds,
+      extensions: permission.extensions
+    }
+  end
+
+  defp budget_classes(attrs) do
+    classes =
+      Value.required(
+        attrs,
+        :budget_classes,
+        "Citadel.PolicyPacks.BudgetOverridePermission",
+        fn value ->
+          Value.unique_strings!(
+            value,
+            "Citadel.PolicyPacks.BudgetOverridePermission.budget_classes",
+            allow_empty?: false
+          )
+        end
+      )
+
+    invalid = Enum.reject(classes, &(&1 in @budget_classes))
+
+    if invalid == [] do
+      classes
+    else
+      raise ArgumentError,
+            "Citadel.PolicyPacks.BudgetOverridePermission.budget_classes contains unsupported values: #{inspect(invalid)}"
+    end
+  end
+end
+
+defmodule Citadel.PolicyPacks.BudgetPolicy do
+  @moduledoc """
+  Budget policy block selected with a policy pack.
+  """
+
+  alias Citadel.ContractCore.Value
+  alias Citadel.PolicyPacks.BudgetOverridePermission
+
+  @period_classes ["per_run", "per_skill", "per_day", "per_tenant", "per_authority"]
+  @exhaustion_behaviors ["fail_closed", "operator_override_required"]
+  @schema [
+    scope_key_ref: :string,
+    period_class: :string,
+    hard_cap_class: :string,
+    soft_cap_class: :string,
+    default_exhaustion_behavior: :string,
+    override_permissions: {:list, {:struct, BudgetOverridePermission}},
+    extensions: {:map, :json}
+  ]
+  @fields Keyword.keys(@schema)
+
+  @type t :: %__MODULE__{
+          scope_key_ref: String.t(),
+          period_class: String.t(),
+          hard_cap_class: String.t(),
+          soft_cap_class: String.t(),
+          default_exhaustion_behavior: String.t(),
+          override_permissions: [BudgetOverridePermission.t()],
+          extensions: map()
+        }
+
+  @enforce_keys @fields
+  defstruct @fields
+
+  def schema, do: @schema
+
+  def new!(%__MODULE__{} = policy) do
+    policy
+    |> dump()
+    |> new!()
+  end
+
+  def new!(attrs) do
+    attrs = Value.normalize_attrs!(attrs, "Citadel.PolicyPacks.BudgetPolicy", @fields)
+
+    %__MODULE__{
+      scope_key_ref:
+        Value.required(attrs, :scope_key_ref, "Citadel.PolicyPacks.BudgetPolicy", fn value ->
+          Value.string!(value, "Citadel.PolicyPacks.BudgetPolicy.scope_key_ref")
+        end),
+      period_class:
+        enum_string(attrs, :period_class, @period_classes, "Citadel.PolicyPacks.BudgetPolicy"),
+      hard_cap_class:
+        Value.required(attrs, :hard_cap_class, "Citadel.PolicyPacks.BudgetPolicy", fn value ->
+          Value.string!(value, "Citadel.PolicyPacks.BudgetPolicy.hard_cap_class")
+        end),
+      soft_cap_class:
+        Value.required(attrs, :soft_cap_class, "Citadel.PolicyPacks.BudgetPolicy", fn value ->
+          Value.string!(value, "Citadel.PolicyPacks.BudgetPolicy.soft_cap_class")
+        end),
+      default_exhaustion_behavior:
+        enum_string(
+          attrs,
+          :default_exhaustion_behavior,
+          @exhaustion_behaviors,
+          "Citadel.PolicyPacks.BudgetPolicy"
+        ),
+      override_permissions: override_permissions(attrs),
+      extensions:
+        Value.optional(
+          attrs,
+          :extensions,
+          "Citadel.PolicyPacks.BudgetPolicy",
+          fn value ->
+            Value.json_object!(value, "Citadel.PolicyPacks.BudgetPolicy.extensions")
+          end,
+          %{}
+        )
+    }
+  end
+
+  def dump(%__MODULE__{} = policy) do
+    %{
+      scope_key_ref: policy.scope_key_ref,
+      period_class: policy.period_class,
+      hard_cap_class: policy.hard_cap_class,
+      soft_cap_class: policy.soft_cap_class,
+      default_exhaustion_behavior: policy.default_exhaustion_behavior,
+      override_permissions:
+        Enum.map(policy.override_permissions, &BudgetOverridePermission.dump/1),
+      extensions: policy.extensions
+    }
+  end
+
+  defp enum_string(attrs, field, allowed, context) do
+    value =
+      Value.required(attrs, field, context, fn value ->
+        Value.string!(value, "#{context}.#{field}")
+      end)
+
+    if value in allowed do
+      value
+    else
+      raise ArgumentError, "#{context}.#{field} must be one of #{inspect(allowed)}"
+    end
+  end
+
+  defp override_permissions(attrs) do
+    permissions =
+      Value.required(attrs, :override_permissions, "Citadel.PolicyPacks.BudgetPolicy", fn value ->
+        Value.list!(
+          value,
+          "Citadel.PolicyPacks.BudgetPolicy.override_permissions",
+          &BudgetOverridePermission.new!/1,
+          allow_empty?: false
+        )
+      end)
+
+    refs = Enum.map(permissions, & &1.permission_ref)
+
+    if refs == Enum.uniq(refs) do
+      permissions
+    else
+      raise ArgumentError,
+            "Citadel.PolicyPacks.BudgetPolicy.override_permissions must not be ambiguous"
+    end
+  end
+end
+
 defmodule Citadel.PolicyPacks.PolicyPack do
   @moduledoc """
   One explicit policy pack plus its selector, profile set, and rejection policy.
   """
 
   alias Citadel.ContractCore.Value
+  alias Citadel.PolicyPacks.BudgetPolicy
   alias Citadel.PolicyPacks.ExecutionPolicy
   alias Citadel.PolicyPacks.GuardrailChainPolicy
   alias Citadel.PolicyPacks.Profiles
@@ -837,6 +1098,7 @@ defmodule Citadel.PolicyPacks.PolicyPack do
     execution_policy: {:struct, ExecutionPolicy},
     prompt_version_policy: {:struct, PromptVersionPolicy},
     guardrail_chain_policy: {:struct, GuardrailChainPolicy},
+    budget_policy: {:struct, BudgetPolicy},
     rejection_policy: {:struct, RejectionPolicy},
     extensions: {:map, :json}
   ]
@@ -852,6 +1114,7 @@ defmodule Citadel.PolicyPacks.PolicyPack do
           execution_policy: ExecutionPolicy.t() | nil,
           prompt_version_policy: PromptVersionPolicy.t() | nil,
           guardrail_chain_policy: GuardrailChainPolicy.t() | nil,
+          budget_policy: BudgetPolicy.t() | nil,
           rejection_policy: RejectionPolicy.t(),
           extensions: map()
         }
@@ -943,6 +1206,16 @@ defmodule Citadel.PolicyPacks.PolicyPack do
           end,
           nil
         ),
+      budget_policy:
+        Value.optional(
+          attrs,
+          :budget_policy,
+          "Citadel.PolicyPacks.PolicyPack",
+          fn value ->
+            Value.module!(value, BudgetPolicy, "Citadel.PolicyPacks.PolicyPack.budget_policy")
+          end,
+          nil
+        ),
       rejection_policy:
         Value.required(attrs, :rejection_policy, "Citadel.PolicyPacks.PolicyPack", fn value ->
           Value.module!(value, RejectionPolicy, "Citadel.PolicyPacks.PolicyPack.rejection_policy")
@@ -971,6 +1244,7 @@ defmodule Citadel.PolicyPacks.PolicyPack do
       execution_policy: dump_execution_policy(pack.execution_policy),
       prompt_version_policy: dump_prompt_version_policy(pack.prompt_version_policy),
       guardrail_chain_policy: dump_guardrail_chain_policy(pack.guardrail_chain_policy),
+      budget_policy: dump_budget_policy(pack.budget_policy),
       rejection_policy: RejectionPolicy.dump(pack.rejection_policy),
       extensions: pack.extensions
     }
@@ -988,6 +1262,9 @@ defmodule Citadel.PolicyPacks.PolicyPack do
   defp dump_guardrail_chain_policy(%GuardrailChainPolicy{} = policy),
     do: GuardrailChainPolicy.dump(policy)
 
+  defp dump_budget_policy(nil), do: nil
+  defp dump_budget_policy(%BudgetPolicy{} = policy), do: BudgetPolicy.dump(policy)
+
   def matches?(%__MODULE__{} = pack, attrs) do
     pack = new!(pack)
     Selector.matches?(pack.selector, attrs)
@@ -1000,6 +1277,7 @@ defmodule Citadel.PolicyPacks.Selection do
   """
 
   alias Citadel.ContractCore.Value
+  alias Citadel.PolicyPacks.BudgetPolicy
   alias Citadel.PolicyPacks.ExecutionPolicy
   alias Citadel.PolicyPacks.GuardrailChainPolicy
   alias Citadel.PolicyPacks.Profiles
@@ -1015,6 +1293,7 @@ defmodule Citadel.PolicyPacks.Selection do
     execution_policy: {:struct, ExecutionPolicy},
     prompt_version_policy: {:struct, PromptVersionPolicy},
     guardrail_chain_policy: {:struct, GuardrailChainPolicy},
+    budget_policy: {:struct, BudgetPolicy},
     rejection_policy: {:struct, RejectionPolicy},
     extensions: {:map, :json}
   ]
@@ -1029,6 +1308,7 @@ defmodule Citadel.PolicyPacks.Selection do
           execution_policy: ExecutionPolicy.t() | nil,
           prompt_version_policy: PromptVersionPolicy.t() | nil,
           guardrail_chain_policy: GuardrailChainPolicy.t() | nil,
+          budget_policy: BudgetPolicy.t() | nil,
           rejection_policy: RejectionPolicy.t(),
           extensions: map()
         }
@@ -1104,6 +1384,16 @@ defmodule Citadel.PolicyPacks.Selection do
           end,
           nil
         ),
+      budget_policy:
+        Value.optional(
+          attrs,
+          :budget_policy,
+          "Citadel.PolicyPacks.Selection",
+          fn value ->
+            Value.module!(value, BudgetPolicy, "Citadel.PolicyPacks.Selection.budget_policy")
+          end,
+          nil
+        ),
       rejection_policy:
         Value.required(attrs, :rejection_policy, "Citadel.PolicyPacks.Selection", fn value ->
           Value.module!(value, RejectionPolicy, "Citadel.PolicyPacks.Selection.rejection_policy")
@@ -1131,6 +1421,7 @@ defmodule Citadel.PolicyPacks.Selection do
       execution_policy: dump_execution_policy(selection.execution_policy),
       prompt_version_policy: dump_prompt_version_policy(selection.prompt_version_policy),
       guardrail_chain_policy: dump_guardrail_chain_policy(selection.guardrail_chain_policy),
+      budget_policy: dump_budget_policy(selection.budget_policy),
       rejection_policy: RejectionPolicy.dump(selection.rejection_policy),
       extensions: selection.extensions
     }
@@ -1147,6 +1438,9 @@ defmodule Citadel.PolicyPacks.Selection do
 
   defp dump_guardrail_chain_policy(%GuardrailChainPolicy{} = policy),
     do: GuardrailChainPolicy.dump(policy)
+
+  defp dump_budget_policy(nil), do: nil
+  defp dump_budget_policy(%BudgetPolicy{} = policy), do: BudgetPolicy.dump(policy)
 end
 
 defmodule Citadel.PolicyPacks do
@@ -1155,6 +1449,7 @@ defmodule Citadel.PolicyPacks do
   """
 
   alias Citadel.ContractCore.Value
+  alias Citadel.PolicyPacks.BudgetPolicy
   alias Citadel.PolicyPacks.ExecutionPolicy
   alias Citadel.PolicyPacks.PolicyPack
   alias Citadel.PolicyPacks.Selection
@@ -1214,6 +1509,7 @@ defmodule Citadel.PolicyPacks do
           execution_policy: pack.execution_policy,
           prompt_version_policy: pack.prompt_version_policy,
           guardrail_chain_policy: pack.guardrail_chain_policy,
+          budget_policy: pack.budget_policy,
           rejection_policy: pack.rejection_policy,
           extensions: pack.extensions
         })
@@ -1261,6 +1557,7 @@ defmodule Citadel.PolicyPacks do
       execution_policy: coding_ops_standard_execution_policy!(),
       prompt_version_policy: coding_ops_standard_prompt_version_policy!(),
       guardrail_chain_policy: coding_ops_standard_guardrail_chain_policy!(),
+      budget_policy: coding_ops_standard_budget_policy!(),
       rejection_policy: %{
         denial_audit_reason_codes: [
           "policy_denied",
@@ -1368,6 +1665,27 @@ defmodule Citadel.PolicyPacks do
       operator_override_authority_refs: ["authority://operator-review/coding-ops"],
       fail_closed?: true,
       extensions: %{"policy_family" => "coding_ops_guard"}
+    })
+  end
+
+  @spec coding_ops_standard_budget_policy!() :: BudgetPolicy.t()
+  def coding_ops_standard_budget_policy! do
+    BudgetPolicy.new!(%{
+      scope_key_ref: "budget-scope://coding-ops/default",
+      period_class: "per_run",
+      hard_cap_class: "redacted_above_ceiling",
+      soft_cap_class: "redacted_below_floor",
+      default_exhaustion_behavior: "fail_closed",
+      override_permissions: [
+        %{
+          permission_ref: "permission://budget/override",
+          operator_role_refs: ["role://operator/coding-ops-budget-override"],
+          budget_classes: ["production", "replay", "eval", "infrastructure"],
+          max_duration_seconds: 3_600,
+          extensions: %{"policy_family" => "coding_ops_budget_override"}
+        }
+      ],
+      extensions: %{"policy_family" => "coding_ops_budget"}
     })
   end
 

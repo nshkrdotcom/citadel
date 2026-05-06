@@ -3,6 +3,8 @@ defmodule Citadel.PolicyPacksTest do
   use ExUnitProperties
 
   alias Citadel.PolicyPacks
+  alias Citadel.PolicyPacks.BudgetOverridePermission
+  alias Citadel.PolicyPacks.BudgetPolicy
   alias Citadel.PolicyPacks.ExecutionPolicy
   alias Citadel.PolicyPacks.GuardrailChainPolicy
   alias Citadel.PolicyPacks.PolicyPack
@@ -99,6 +101,7 @@ defmodule Citadel.PolicyPacksTest do
     assert pack.execution_policy.placement_intents == ["host_local", "remote_workspace"]
     assert %PromptVersionPolicy{} = pack.prompt_version_policy
     assert %GuardrailChainPolicy{} = pack.guardrail_chain_policy
+    assert %BudgetPolicy{} = pack.budget_policy
 
     assert pack.prompt_version_policy.allowed_prompt_refs == [
              "prompt://coding-ops/standard/system"
@@ -108,6 +111,9 @@ defmodule Citadel.PolicyPacksTest do
              "guard-chain://coding-ops/standard/default"
 
     assert pack.guardrail_chain_policy.fail_closed?
+    assert pack.budget_policy.default_exhaustion_behavior == "fail_closed"
+    assert [%BudgetOverridePermission{} = permission] = pack.budget_policy.override_permissions
+    assert permission.permission_ref == "permission://budget/override"
   end
 
   test "policy packs preserve prompt and guard policy through selection dumps" do
@@ -127,6 +133,40 @@ defmodule Citadel.PolicyPacksTest do
            ]
 
     assert dumped.guardrail_chain_policy.redaction_posture_floor == "partial"
+    assert dumped.budget_policy.period_class == "per_run"
+  end
+
+  test "budget policy rejects missing, ambiguous, and unbounded overrides" do
+    assert_raise ArgumentError, fn ->
+      BudgetPolicy.new!(%{
+        scope_key_ref: "budget-scope://coding-ops/default",
+        period_class: "per_run",
+        hard_cap_class: "redacted_above_ceiling",
+        soft_cap_class: "redacted_below_floor",
+        default_exhaustion_behavior: "fail_closed",
+        override_permissions: []
+      })
+    end
+
+    assert_raise ArgumentError, fn ->
+      BudgetPolicy.new!(%{
+        scope_key_ref: "budget-scope://coding-ops/default",
+        period_class: "per_run",
+        hard_cap_class: "redacted_above_ceiling",
+        soft_cap_class: "redacted_below_floor",
+        default_exhaustion_behavior: "fail_closed",
+        override_permissions: [
+          budget_override_permission(),
+          budget_override_permission()
+        ]
+      })
+    end
+
+    assert_raise ArgumentError, fn ->
+      BudgetOverridePermission.new!(
+        Map.put(budget_override_permission(), :max_duration_seconds, 3_601)
+      )
+    end
   end
 
   defp default_pack do
@@ -186,5 +226,15 @@ defmodule Citadel.PolicyPacksTest do
         extensions: %{}
       }
     })
+  end
+
+  defp budget_override_permission do
+    %{
+      permission_ref: "permission://budget/override",
+      operator_role_refs: ["role://operator/budget"],
+      budget_classes: ["production"],
+      max_duration_seconds: 60,
+      extensions: %{}
+    }
   end
 end
