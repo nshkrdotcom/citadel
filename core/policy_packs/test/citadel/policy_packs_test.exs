@@ -4,7 +4,9 @@ defmodule Citadel.PolicyPacksTest do
 
   alias Citadel.PolicyPacks
   alias Citadel.PolicyPacks.ExecutionPolicy
+  alias Citadel.PolicyPacks.GuardrailChainPolicy
   alias Citadel.PolicyPacks.PolicyPack
+  alias Citadel.PolicyPacks.PromptVersionPolicy
   alias Citadel.PolicyPacks.Selection
 
   test "selects the highest-priority matching pack" do
@@ -95,6 +97,36 @@ defmodule Citadel.PolicyPacksTest do
     assert "repo_write" in pack.execution_policy.command_classes
     assert pack.execution_policy.workspace_mutability == "read_write"
     assert pack.execution_policy.placement_intents == ["host_local", "remote_workspace"]
+    assert %PromptVersionPolicy{} = pack.prompt_version_policy
+    assert %GuardrailChainPolicy{} = pack.guardrail_chain_policy
+
+    assert pack.prompt_version_policy.allowed_prompt_refs == [
+             "prompt://coding-ops/standard/system"
+           ]
+
+    assert pack.guardrail_chain_policy.guard_chain_ref ==
+             "guard-chain://coding-ops/standard/default"
+
+    assert pack.guardrail_chain_policy.fail_closed?
+  end
+
+  test "policy packs preserve prompt and guard policy through selection dumps" do
+    pack = PolicyPacks.coding_ops_standard_pack!()
+
+    assert %Selection{} =
+             selection =
+             PolicyPacks.select_profile!(
+               [pack],
+               %{tenant_id: "tenant-1", scope_kind: "project", environment: "prod"}
+             )
+
+    dumped = Selection.dump(selection)
+
+    assert dumped.prompt_version_policy.allowed_prompt_refs == [
+             "prompt://coding-ops/standard/system"
+           ]
+
+    assert dumped.guardrail_chain_policy.redaction_posture_floor == "partial"
   end
 
   defp default_pack do

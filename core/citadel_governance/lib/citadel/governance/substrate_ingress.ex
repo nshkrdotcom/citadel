@@ -442,6 +442,8 @@ defmodule Citadel.Governance.SubstrateIngress do
         "request_trace_id" => packet.request_trace_id,
         "substrate_trace_id" => packet.substrate_trace_id
       }
+      |> maybe_put_prompt_version_policy(selection.prompt_version_policy)
+      |> maybe_put_guardrail_chain_policy(selection.guardrail_chain_policy)
       |> maybe_put_access_graph(authority_context)
 
     {:ok,
@@ -465,6 +467,41 @@ defmodule Citadel.Governance.SubstrateIngress do
 
   defp maybe_put_access_graph(extensions, access_graph) when is_map(access_graph) do
     Map.put(extensions, "access_graph", access_graph)
+  end
+
+  defp maybe_put_prompt_version_policy(extensions, nil), do: extensions
+
+  defp maybe_put_prompt_version_policy(extensions, policy)
+       when is_map(policy) and not is_struct(policy) do
+    Map.put(extensions, "prompt_version_policy", policy)
+  end
+
+  defp maybe_put_prompt_version_policy(extensions, policy) do
+    Map.put(extensions, "prompt_version_policy", %{
+      "allowed_prompt_refs" => policy.allowed_prompt_refs,
+      "allowed_revision_range" => policy.allowed_revision_range,
+      "ab_variant_refs" => policy.ab_variant_refs,
+      "rollback_requires_authority" => policy.rollback_requires_authority?,
+      "eval_evidence_required" => policy.eval_evidence_required?,
+      "guard_evidence_required" => policy.guard_evidence_required?
+    })
+  end
+
+  defp maybe_put_guardrail_chain_policy(extensions, nil), do: extensions
+
+  defp maybe_put_guardrail_chain_policy(extensions, policy)
+       when is_map(policy) and not is_struct(policy) do
+    Map.put(extensions, "guardrail_chain_policy", policy)
+  end
+
+  defp maybe_put_guardrail_chain_policy(extensions, policy) do
+    Map.put(extensions, "guardrail_chain_policy", %{
+      "guard_chain_ref" => policy.guard_chain_ref,
+      "detector_refs" => policy.detector_refs,
+      "redaction_posture_floor" => policy.redaction_posture_floor,
+      "operator_override_authority_refs" => policy.operator_override_authority_refs,
+      "fail_closed" => policy.fail_closed?
+    })
   end
 
   defp execution_governance(
@@ -632,6 +669,12 @@ defmodule Citadel.Governance.SubstrateIngress do
           "installation_revision" => packet.installation_revision
         }
       }
+      |> maybe_put_prompt_version_policy(
+        authority_packet.extensions["citadel"]["prompt_version_policy"]
+      )
+      |> maybe_put_guardrail_chain_policy(
+        authority_packet.extensions["citadel"]["guardrail_chain_policy"]
+      )
       |> maybe_put_execution_envelope(step_extensions)
 
     {:ok,

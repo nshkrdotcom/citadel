@@ -564,6 +564,256 @@ defmodule Citadel.PolicyPacks.RejectionPolicy do
   end
 end
 
+defmodule Citadel.PolicyPacks.PromptVersionPolicy do
+  @moduledoc """
+  Prompt artifact bindings owned by a policy pack.
+  """
+
+  alias Citadel.ContractCore.Value
+
+  @schema [
+    allowed_prompt_refs: {:list, :string},
+    allowed_revision_range: {:map, :json},
+    ab_variant_refs: {:list, :string},
+    rollback_requires_authority?: :boolean,
+    eval_evidence_required?: :boolean,
+    guard_evidence_required?: :boolean,
+    extensions: {:map, :json}
+  ]
+  @fields Keyword.keys(@schema)
+
+  @type t :: %__MODULE__{
+          allowed_prompt_refs: [String.t()],
+          allowed_revision_range: map(),
+          ab_variant_refs: [String.t()],
+          rollback_requires_authority?: boolean(),
+          eval_evidence_required?: boolean(),
+          guard_evidence_required?: boolean(),
+          extensions: map()
+        }
+
+  @enforce_keys @fields
+  defstruct @fields
+
+  def schema, do: @schema
+
+  def new!(%__MODULE__{} = policy) do
+    policy
+    |> dump()
+    |> new!()
+  end
+
+  def new!(attrs) do
+    attrs = Value.normalize_attrs!(attrs, "Citadel.PolicyPacks.PromptVersionPolicy", @fields)
+
+    %__MODULE__{
+      allowed_prompt_refs:
+        Value.optional(
+          attrs,
+          :allowed_prompt_refs,
+          "Citadel.PolicyPacks.PromptVersionPolicy",
+          fn value ->
+            Value.unique_strings!(
+              value,
+              "Citadel.PolicyPacks.PromptVersionPolicy.allowed_prompt_refs"
+            )
+          end,
+          []
+        ),
+      allowed_revision_range:
+        Value.optional(
+          attrs,
+          :allowed_revision_range,
+          "Citadel.PolicyPacks.PromptVersionPolicy",
+          fn value ->
+            Value.json_object!(
+              value,
+              "Citadel.PolicyPacks.PromptVersionPolicy.allowed_revision_range"
+            )
+          end,
+          %{}
+        ),
+      ab_variant_refs:
+        Value.optional(
+          attrs,
+          :ab_variant_refs,
+          "Citadel.PolicyPacks.PromptVersionPolicy",
+          fn value ->
+            Value.unique_strings!(
+              value,
+              "Citadel.PolicyPacks.PromptVersionPolicy.ab_variant_refs"
+            )
+          end,
+          []
+        ),
+      rollback_requires_authority?: boolean_option(attrs, :rollback_requires_authority?, true),
+      eval_evidence_required?: boolean_option(attrs, :eval_evidence_required?, true),
+      guard_evidence_required?: boolean_option(attrs, :guard_evidence_required?, true),
+      extensions: json_option(attrs, :extensions, %{})
+    }
+  end
+
+  def dump(%__MODULE__{} = policy) do
+    %{
+      allowed_prompt_refs: policy.allowed_prompt_refs,
+      allowed_revision_range: policy.allowed_revision_range,
+      ab_variant_refs: policy.ab_variant_refs,
+      rollback_requires_authority?: policy.rollback_requires_authority?,
+      eval_evidence_required?: policy.eval_evidence_required?,
+      guard_evidence_required?: policy.guard_evidence_required?,
+      extensions: policy.extensions
+    }
+  end
+
+  defp boolean_option(attrs, field, default) do
+    Value.optional(
+      attrs,
+      field,
+      "Citadel.PolicyPacks.PromptVersionPolicy",
+      fn value -> Value.boolean!(value, "Citadel.PolicyPacks.PromptVersionPolicy.#{field}") end,
+      default
+    )
+  end
+
+  defp json_option(attrs, field, default) do
+    Value.optional(
+      attrs,
+      field,
+      "Citadel.PolicyPacks.PromptVersionPolicy",
+      fn value ->
+        Value.json_object!(value, "Citadel.PolicyPacks.PromptVersionPolicy.#{field}")
+      end,
+      default
+    )
+  end
+end
+
+defmodule Citadel.PolicyPacks.GuardrailChainPolicy do
+  @moduledoc """
+  Guardrail detector-chain bindings owned by a policy pack.
+  """
+
+  alias Citadel.ContractCore.Value
+
+  @redaction_postures ["pass", "partial", "excerpt_only", "no_export", "block"]
+  @schema [
+    guard_chain_ref: :string,
+    detector_refs: {:list, :string},
+    redaction_posture_floor: :string,
+    operator_override_authority_refs: {:list, :string},
+    fail_closed?: :boolean,
+    extensions: {:map, :json}
+  ]
+  @fields Keyword.keys(@schema)
+
+  @type t :: %__MODULE__{
+          guard_chain_ref: String.t(),
+          detector_refs: [String.t()],
+          redaction_posture_floor: String.t(),
+          operator_override_authority_refs: [String.t()],
+          fail_closed?: boolean(),
+          extensions: map()
+        }
+
+  @enforce_keys @fields
+  defstruct @fields
+
+  def schema, do: @schema
+
+  def new!(%__MODULE__{} = policy) do
+    policy
+    |> dump()
+    |> new!()
+  end
+
+  def new!(attrs) do
+    attrs = Value.normalize_attrs!(attrs, "Citadel.PolicyPacks.GuardrailChainPolicy", @fields)
+
+    posture =
+      Value.optional(
+        attrs,
+        :redaction_posture_floor,
+        "Citadel.PolicyPacks.GuardrailChainPolicy",
+        fn value ->
+          Value.string!(value, "Citadel.PolicyPacks.GuardrailChainPolicy.redaction_posture_floor")
+        end,
+        "partial"
+      )
+
+    if posture not in @redaction_postures do
+      raise ArgumentError,
+            "Citadel.PolicyPacks.GuardrailChainPolicy.redaction_posture_floor must be one of #{inspect(@redaction_postures)}, got: #{inspect(posture)}"
+    end
+
+    %__MODULE__{
+      guard_chain_ref:
+        Value.required(
+          attrs,
+          :guard_chain_ref,
+          "Citadel.PolicyPacks.GuardrailChainPolicy",
+          fn value ->
+            Value.string!(value, "Citadel.PolicyPacks.GuardrailChainPolicy.guard_chain_ref")
+          end
+        ),
+      detector_refs:
+        Value.optional(
+          attrs,
+          :detector_refs,
+          "Citadel.PolicyPacks.GuardrailChainPolicy",
+          fn value ->
+            Value.unique_strings!(value, "Citadel.PolicyPacks.GuardrailChainPolicy.detector_refs")
+          end,
+          []
+        ),
+      redaction_posture_floor: posture,
+      operator_override_authority_refs:
+        Value.optional(
+          attrs,
+          :operator_override_authority_refs,
+          "Citadel.PolicyPacks.GuardrailChainPolicy",
+          fn value ->
+            Value.unique_strings!(
+              value,
+              "Citadel.PolicyPacks.GuardrailChainPolicy.operator_override_authority_refs"
+            )
+          end,
+          []
+        ),
+      fail_closed?:
+        Value.optional(
+          attrs,
+          :fail_closed?,
+          "Citadel.PolicyPacks.GuardrailChainPolicy",
+          fn value ->
+            Value.boolean!(value, "Citadel.PolicyPacks.GuardrailChainPolicy.fail_closed?")
+          end,
+          true
+        ),
+      extensions:
+        Value.optional(
+          attrs,
+          :extensions,
+          "Citadel.PolicyPacks.GuardrailChainPolicy",
+          fn value ->
+            Value.json_object!(value, "Citadel.PolicyPacks.GuardrailChainPolicy.extensions")
+          end,
+          %{}
+        )
+    }
+  end
+
+  def dump(%__MODULE__{} = policy) do
+    %{
+      guard_chain_ref: policy.guard_chain_ref,
+      detector_refs: policy.detector_refs,
+      redaction_posture_floor: policy.redaction_posture_floor,
+      operator_override_authority_refs: policy.operator_override_authority_refs,
+      fail_closed?: policy.fail_closed?,
+      extensions: policy.extensions
+    }
+  end
+end
+
 defmodule Citadel.PolicyPacks.PolicyPack do
   @moduledoc """
   One explicit policy pack plus its selector, profile set, and rejection policy.
@@ -571,7 +821,9 @@ defmodule Citadel.PolicyPacks.PolicyPack do
 
   alias Citadel.ContractCore.Value
   alias Citadel.PolicyPacks.ExecutionPolicy
+  alias Citadel.PolicyPacks.GuardrailChainPolicy
   alias Citadel.PolicyPacks.Profiles
+  alias Citadel.PolicyPacks.PromptVersionPolicy
   alias Citadel.PolicyPacks.RejectionPolicy
   alias Citadel.PolicyPacks.Selector
 
@@ -583,6 +835,8 @@ defmodule Citadel.PolicyPacks.PolicyPack do
     selector: {:struct, Selector},
     profiles: {:struct, Profiles},
     execution_policy: {:struct, ExecutionPolicy},
+    prompt_version_policy: {:struct, PromptVersionPolicy},
+    guardrail_chain_policy: {:struct, GuardrailChainPolicy},
     rejection_policy: {:struct, RejectionPolicy},
     extensions: {:map, :json}
   ]
@@ -596,6 +850,8 @@ defmodule Citadel.PolicyPacks.PolicyPack do
           selector: Selector.t(),
           profiles: Profiles.t(),
           execution_policy: ExecutionPolicy.t() | nil,
+          prompt_version_policy: PromptVersionPolicy.t() | nil,
+          guardrail_chain_policy: GuardrailChainPolicy.t() | nil,
           rejection_policy: RejectionPolicy.t(),
           extensions: map()
         }
@@ -659,6 +915,34 @@ defmodule Citadel.PolicyPacks.PolicyPack do
           end,
           nil
         ),
+      prompt_version_policy:
+        Value.optional(
+          attrs,
+          :prompt_version_policy,
+          "Citadel.PolicyPacks.PolicyPack",
+          fn value ->
+            Value.module!(
+              value,
+              PromptVersionPolicy,
+              "Citadel.PolicyPacks.PolicyPack.prompt_version_policy"
+            )
+          end,
+          nil
+        ),
+      guardrail_chain_policy:
+        Value.optional(
+          attrs,
+          :guardrail_chain_policy,
+          "Citadel.PolicyPacks.PolicyPack",
+          fn value ->
+            Value.module!(
+              value,
+              GuardrailChainPolicy,
+              "Citadel.PolicyPacks.PolicyPack.guardrail_chain_policy"
+            )
+          end,
+          nil
+        ),
       rejection_policy:
         Value.required(attrs, :rejection_policy, "Citadel.PolicyPacks.PolicyPack", fn value ->
           Value.module!(value, RejectionPolicy, "Citadel.PolicyPacks.PolicyPack.rejection_policy")
@@ -685,6 +969,8 @@ defmodule Citadel.PolicyPacks.PolicyPack do
       selector: Selector.dump(pack.selector),
       profiles: Profiles.dump(pack.profiles),
       execution_policy: dump_execution_policy(pack.execution_policy),
+      prompt_version_policy: dump_prompt_version_policy(pack.prompt_version_policy),
+      guardrail_chain_policy: dump_guardrail_chain_policy(pack.guardrail_chain_policy),
       rejection_policy: RejectionPolicy.dump(pack.rejection_policy),
       extensions: pack.extensions
     }
@@ -692,6 +978,15 @@ defmodule Citadel.PolicyPacks.PolicyPack do
 
   defp dump_execution_policy(nil), do: nil
   defp dump_execution_policy(%ExecutionPolicy{} = policy), do: ExecutionPolicy.dump(policy)
+  defp dump_prompt_version_policy(nil), do: nil
+
+  defp dump_prompt_version_policy(%PromptVersionPolicy{} = policy),
+    do: PromptVersionPolicy.dump(policy)
+
+  defp dump_guardrail_chain_policy(nil), do: nil
+
+  defp dump_guardrail_chain_policy(%GuardrailChainPolicy{} = policy),
+    do: GuardrailChainPolicy.dump(policy)
 
   def matches?(%__MODULE__{} = pack, attrs) do
     pack = new!(pack)
@@ -706,7 +1001,9 @@ defmodule Citadel.PolicyPacks.Selection do
 
   alias Citadel.ContractCore.Value
   alias Citadel.PolicyPacks.ExecutionPolicy
+  alias Citadel.PolicyPacks.GuardrailChainPolicy
   alias Citadel.PolicyPacks.Profiles
+  alias Citadel.PolicyPacks.PromptVersionPolicy
   alias Citadel.PolicyPacks.RejectionPolicy
 
   @schema [
@@ -716,6 +1013,8 @@ defmodule Citadel.PolicyPacks.Selection do
     priority: :non_neg_integer,
     profiles: {:struct, Profiles},
     execution_policy: {:struct, ExecutionPolicy},
+    prompt_version_policy: {:struct, PromptVersionPolicy},
+    guardrail_chain_policy: {:struct, GuardrailChainPolicy},
     rejection_policy: {:struct, RejectionPolicy},
     extensions: {:map, :json}
   ]
@@ -728,6 +1027,8 @@ defmodule Citadel.PolicyPacks.Selection do
           priority: non_neg_integer(),
           profiles: Profiles.t(),
           execution_policy: ExecutionPolicy.t() | nil,
+          prompt_version_policy: PromptVersionPolicy.t() | nil,
+          guardrail_chain_policy: GuardrailChainPolicy.t() | nil,
           rejection_policy: RejectionPolicy.t(),
           extensions: map()
         }
@@ -775,6 +1076,34 @@ defmodule Citadel.PolicyPacks.Selection do
           end,
           nil
         ),
+      prompt_version_policy:
+        Value.optional(
+          attrs,
+          :prompt_version_policy,
+          "Citadel.PolicyPacks.Selection",
+          fn value ->
+            Value.module!(
+              value,
+              PromptVersionPolicy,
+              "Citadel.PolicyPacks.Selection.prompt_version_policy"
+            )
+          end,
+          nil
+        ),
+      guardrail_chain_policy:
+        Value.optional(
+          attrs,
+          :guardrail_chain_policy,
+          "Citadel.PolicyPacks.Selection",
+          fn value ->
+            Value.module!(
+              value,
+              GuardrailChainPolicy,
+              "Citadel.PolicyPacks.Selection.guardrail_chain_policy"
+            )
+          end,
+          nil
+        ),
       rejection_policy:
         Value.required(attrs, :rejection_policy, "Citadel.PolicyPacks.Selection", fn value ->
           Value.module!(value, RejectionPolicy, "Citadel.PolicyPacks.Selection.rejection_policy")
@@ -800,6 +1129,8 @@ defmodule Citadel.PolicyPacks.Selection do
       priority: selection.priority,
       profiles: Profiles.dump(selection.profiles),
       execution_policy: dump_execution_policy(selection.execution_policy),
+      prompt_version_policy: dump_prompt_version_policy(selection.prompt_version_policy),
+      guardrail_chain_policy: dump_guardrail_chain_policy(selection.guardrail_chain_policy),
       rejection_policy: RejectionPolicy.dump(selection.rejection_policy),
       extensions: selection.extensions
     }
@@ -807,6 +1138,15 @@ defmodule Citadel.PolicyPacks.Selection do
 
   defp dump_execution_policy(nil), do: nil
   defp dump_execution_policy(%ExecutionPolicy{} = policy), do: ExecutionPolicy.dump(policy)
+  defp dump_prompt_version_policy(nil), do: nil
+
+  defp dump_prompt_version_policy(%PromptVersionPolicy{} = policy),
+    do: PromptVersionPolicy.dump(policy)
+
+  defp dump_guardrail_chain_policy(nil), do: nil
+
+  defp dump_guardrail_chain_policy(%GuardrailChainPolicy{} = policy),
+    do: GuardrailChainPolicy.dump(policy)
 end
 
 defmodule Citadel.PolicyPacks do
@@ -872,6 +1212,8 @@ defmodule Citadel.PolicyPacks do
           priority: pack.priority,
           profiles: pack.profiles,
           execution_policy: pack.execution_policy,
+          prompt_version_policy: pack.prompt_version_policy,
+          guardrail_chain_policy: pack.guardrail_chain_policy,
           rejection_policy: pack.rejection_policy,
           extensions: pack.extensions
         })
@@ -917,6 +1259,8 @@ defmodule Citadel.PolicyPacks do
         extensions: %{}
       },
       execution_policy: coding_ops_standard_execution_policy!(),
+      prompt_version_policy: coding_ops_standard_prompt_version_policy!(),
+      guardrail_chain_policy: coding_ops_standard_guardrail_chain_policy!(),
       rejection_policy: %{
         denial_audit_reason_codes: [
           "policy_denied",
@@ -990,6 +1334,40 @@ defmodule Citadel.PolicyPacks do
       execution_families: ["process"],
       wall_clock_budget_ms: 300_000,
       extensions: %{"non_interactive" => %{"approval_default" => "manual"}}
+    })
+  end
+
+  @spec coding_ops_standard_prompt_version_policy!() ::
+          Citadel.PolicyPacks.PromptVersionPolicy.t()
+  def coding_ops_standard_prompt_version_policy! do
+    Citadel.PolicyPacks.PromptVersionPolicy.new!(%{
+      allowed_prompt_refs: ["prompt://coding-ops/standard/system"],
+      allowed_revision_range: %{
+        "prompt://coding-ops/standard/system" => %{"min" => 1, "max" => 1}
+      },
+      ab_variant_refs: [],
+      rollback_requires_authority?: true,
+      eval_evidence_required?: true,
+      guard_evidence_required?: true,
+      extensions: %{"policy_family" => "coding_ops_prompt"}
+    })
+  end
+
+  @spec coding_ops_standard_guardrail_chain_policy!() ::
+          Citadel.PolicyPacks.GuardrailChainPolicy.t()
+  def coding_ops_standard_guardrail_chain_policy! do
+    Citadel.PolicyPacks.GuardrailChainPolicy.new!(%{
+      guard_chain_ref: "guard-chain://coding-ops/standard/default",
+      detector_refs: [
+        "detector://pii_reference",
+        "detector://jailbreak_reference",
+        "detector://schema_shape_reference",
+        "detector://length_bounds"
+      ],
+      redaction_posture_floor: "partial",
+      operator_override_authority_refs: ["authority://operator-review/coding-ops"],
+      fail_closed?: true,
+      extensions: %{"policy_family" => "coding_ops_guard"}
     })
   end
 

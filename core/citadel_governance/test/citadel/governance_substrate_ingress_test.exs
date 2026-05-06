@@ -73,6 +73,20 @@ defmodule Citadel.GovernanceSubstrateIngressTest do
     assert governance.placement["placement_intent"] == "remote_workspace"
     assert governance.operations["allowed_operations"] == ["shell.exec"]
     assert governance.operations["effect_classes"] == ["filesystem", "process"]
+
+    citadel_extensions = compiled.authority_packet.extensions["citadel"]
+
+    assert citadel_extensions["prompt_version_policy"]["allowed_prompt_refs"] == [
+             "prompt://coding-ops/standard/system"
+           ]
+
+    assert citadel_extensions["guardrail_chain_policy"]["guard_chain_ref"] ==
+             "guard-chain://coding-ops/standard/default"
+
+    request_extensions = compiled.lower_intent.invocation_request.extensions["citadel"]
+
+    assert request_extensions["prompt_version_policy"]["guard_evidence_required"] == true
+    assert request_extensions["guardrail_chain_policy"]["fail_closed"] == true
   end
 
   test "rejects coding-ops sandbox downgrades before lower submission" do
