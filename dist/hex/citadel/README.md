@@ -112,7 +112,7 @@ Citadel is pinned to Elixir `~> 1.19` and OTP 28. The repo-level `.tool-versions
 
 The root Mix project is a tooling-only workspace orchestrator. Wave 1 materializes the packet-pinned workspace tooling and dependency posture explicitly:
 
-- `{:blitz, "~> 0.2.0", runtime: false}` for workspace fanout
+- `{:blitz, "~> 0.3.0", runtime: false}` for workspace fanout
 - `{:weld, "~> 0.7.2", runtime: false}` for repo-local package projection and release preparation
 - `{:jcs, "~> 0.2.0"}` in `core/contract_core` for RFC 8785 / JCS ownership
 
