@@ -67,8 +67,8 @@ defmodule Citadel.DomainSurface.Wave15Test do
 
     tool_versions = File.read!(Path.expand("../.tool-versions", __DIR__))
 
-    assert tool_versions =~ "erlang 28.3"
-    assert tool_versions =~ "elixir 1.19.5-otp-28"
+    assert String.contains?(tool_versions, "erlang 28.3")
+    assert String.contains?(tool_versions, "elixir 1.19.5-otp-28")
   end
 
   test "materializes the proving-ground module layout" do

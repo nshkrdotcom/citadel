@@ -64,20 +64,25 @@ defmodule Citadel.ObservabilityContract.OperationsPostureTest do
         assert Map.has_key?(dumped, field)
       end
 
-      assert profile.metric_ref =~ "."
-      assert profile.trace_ref =~ "."
-      assert profile.log_ref =~ "."
+      assert String.contains?(profile.metric_ref, ".")
+      assert String.contains?(profile.trace_ref, ".")
+      assert String.contains?(profile.log_ref, ".")
       assert profile.log_field_allowlist == OperationsPosture.safe_log_field_allowlist()
       assert profile.log_field_blocklist == OperationsPosture.raw_log_field_blocklist()
-      assert profile.alert_ref =~ "."
-      assert profile.incident_runbook_ref =~ "runbooks/observability_operations_posture.md"
-      assert profile.slo_or_error_budget_ref =~ "."
+      assert String.contains?(profile.alert_ref, ".")
+
+      assert String.contains?(
+               profile.incident_runbook_ref,
+               "runbooks/observability_operations_posture.md"
+             )
+
+      assert String.contains?(profile.slo_or_error_budget_ref, ".")
       assert profile.slo_or_error_budget_scope.ref == profile.slo_or_error_budget_ref
-      assert profile.paging_or_triage_route =~ "-"
+      assert String.contains?(profile.paging_or_triage_route, "-")
       assert profile.redaction_policy_ref == "citadel.redaction.refs_only.v1"
       assert profile.retention_ref == "phase5.observability_evidence.retention.v1"
       assert profile.sampling_policy_ref == "success=100/min;debug=drop;protected=always"
-      assert profile.dropped_or_suppressed_count_ref =~ "."
+      assert String.contains?(profile.dropped_or_suppressed_count_ref, ".")
       assert profile.not_applicable_reason == nil
       assert OperationsPosture.alert_route_complete?(profile)
       assert OperationsPosture.alert_condition_coverage_complete?(profile)
@@ -185,15 +190,20 @@ defmodule Citadel.ObservabilityContract.OperationsPostureTest do
       profile = OperationsPosture.profile!(seam)
 
       assert profile.owner_repo == "mezzanine"
-      assert profile.log_ref =~ "redacted"
-      assert profile.alert_ref =~ "mezzanine.alert"
-      assert profile.incident_runbook_ref =~ "runbooks/observability_operations_posture.md#"
-      assert profile.slo_or_error_budget_ref =~ "mezzanine.error_budget"
-      assert profile.paging_or_triage_route =~ "mezzanine-"
+      assert String.contains?(profile.log_ref, "redacted")
+      assert String.contains?(profile.alert_ref, "mezzanine.alert")
+
+      assert String.contains?(
+               profile.incident_runbook_ref,
+               "runbooks/observability_operations_posture.md#"
+             )
+
+      assert String.contains?(profile.slo_or_error_budget_ref, "mezzanine.error_budget")
+      assert String.contains?(profile.paging_or_triage_route, "mezzanine-")
       assert profile.redaction_policy_ref == "citadel.redaction.refs_only.v1"
       assert profile.retention_ref == "phase5.observability_evidence.retention.v1"
       assert profile.sampling_policy_ref == "success=100/min;debug=drop;protected=always"
-      assert profile.dropped_or_suppressed_count_ref =~ "count"
+      assert String.contains?(profile.dropped_or_suppressed_count_ref, "count")
       assert profile.severity_mapping.tenant_authority_bypass == :p0
       assert profile.severity_mapping.fail_closed_security == :p1
       assert profile.alert_condition_coverage.tenant_authority_bypass.posture == :alert_or_triage
@@ -212,21 +222,21 @@ defmodule Citadel.ObservabilityContract.OperationsPostureTest do
              |> Map.delete(:log_ref)
              |> OperationsPosture.new()
 
-    assert message =~ "source-backed not-applicable evidence"
+    assert String.contains?(message, "source-backed not-applicable evidence")
 
     assert {:error, %ArgumentError{message: message}} =
              base
              |> Map.put(:alert_ref, "")
              |> OperationsPosture.new()
 
-    assert message =~ "non-empty strings"
+    assert String.contains?(message, "non-empty strings")
 
     assert {:error, %ArgumentError{message: message}} =
              base
              |> Map.delete(:dropped_or_suppressed_count_ref)
              |> OperationsPosture.new()
 
-    assert message =~ "missing required field"
+    assert String.contains?(message, "missing required field")
   end
 
   test "profiles fail closed when log blocklists omit prohibited raw fields" do
@@ -237,14 +247,14 @@ defmodule Citadel.ObservabilityContract.OperationsPostureTest do
              |> Map.update!(:log_field_blocklist, &List.delete(&1, :raw_prompt))
              |> OperationsPosture.new()
 
-    assert message =~ "must include raw log fields"
+    assert String.contains?(message, "must include raw log fields")
 
     assert {:error, %ArgumentError{message: message}} =
              base
              |> Map.update!(:log_field_allowlist, &[:raw_prompt | &1])
              |> OperationsPosture.new()
 
-    assert message =~ "overlaps with its blocklist"
+    assert String.contains?(message, "overlaps with its blocklist")
   end
 
   test "profiles fail closed when alert condition coverage is incomplete" do
@@ -255,7 +265,7 @@ defmodule Citadel.ObservabilityContract.OperationsPostureTest do
              |> update_in([:alert_condition_coverage], &Map.delete(&1, :observability_overflow))
              |> OperationsPosture.new()
 
-    assert message =~ "missing condition families"
+    assert String.contains?(message, "missing condition families")
 
     assert {:error, %ArgumentError{message: message}} =
              base
@@ -266,7 +276,7 @@ defmodule Citadel.ObservabilityContract.OperationsPostureTest do
              end)
              |> OperationsPosture.new()
 
-    assert message =~ "P0/P1 critical condition families require"
+    assert String.contains?(message, "P0/P1 critical condition families require")
 
     assert {:error, %ArgumentError{message: message}} =
              base
@@ -275,7 +285,7 @@ defmodule Citadel.ObservabilityContract.OperationsPostureTest do
              end)
              |> OperationsPosture.new()
 
-    assert message =~ "source_evidence_ref"
+    assert String.contains?(message, "source_evidence_ref")
   end
 
   test "profiles fail closed when slo or error-budget scope is broad or incomplete" do
@@ -286,7 +296,7 @@ defmodule Citadel.ObservabilityContract.OperationsPostureTest do
              |> Map.delete(:slo_or_error_budget_scope)
              |> OperationsPosture.new()
 
-    assert message =~ "missing required field"
+    assert String.contains?(message, "missing required field")
 
     assert {:error, %ArgumentError{message: message}} =
              base
@@ -295,14 +305,14 @@ defmodule Citadel.ObservabilityContract.OperationsPostureTest do
              end)
              |> OperationsPosture.new()
 
-    assert message =~ "slo_or_error_budget_hardening_behavior"
+    assert String.contains?(message, "slo_or_error_budget_hardening_behavior")
 
     assert {:error, %ArgumentError{message: message}} =
              base
              |> put_in([:slo_or_error_budget_scope, :ref], "product.slo.site_availability")
              |> OperationsPosture.new()
 
-    assert message =~ "must match slo_or_error_budget_ref"
+    assert String.contains?(message, "must match slo_or_error_budget_ref")
 
     assert {:error, %ArgumentError{message: message}} =
              base
@@ -310,7 +320,7 @@ defmodule Citadel.ObservabilityContract.OperationsPostureTest do
              |> put_in([:slo_or_error_budget_scope, :ref], "product.slo.site_availability")
              |> OperationsPosture.new()
 
-    assert message =~ "must not be a broad product SLO claim"
+    assert String.contains?(message, "must not be a broad product SLO claim")
   end
 
   test "source-backed not-applicable evidence can close a missing operating dimension" do
@@ -359,7 +369,7 @@ defmodule Citadel.ObservabilityContract.OperationsPostureTest do
       |> Map.put(:not_applicable_reason, not_applicable_reason)
 
     assert {:error, %ArgumentError{message: message}} = OperationsPosture.new(attrs)
-    assert message =~ "critical observable seams require"
+    assert String.contains?(message, "critical observable seams require")
   end
 
   test "missing not-applicable source evidence fails closed" do
@@ -377,7 +387,7 @@ defmodule Citadel.ObservabilityContract.OperationsPostureTest do
       })
 
     assert {:error, %ArgumentError{message: message}} = OperationsPosture.new(attrs)
-    assert message =~ "source_evidence_ref"
+    assert String.contains?(message, "source_evidence_ref")
   end
 
   test "profiles fail closed on unsupported severity posture" do
@@ -388,13 +398,13 @@ defmodule Citadel.ObservabilityContract.OperationsPostureTest do
              |> Map.put(:severity_mapping, %{observability_overflow: :critical})
              |> OperationsPosture.new()
 
-    assert message =~ "severity_mapping_severity"
+    assert String.contains?(message, "severity_mapping_severity")
 
     assert {:error, %ArgumentError{message: message}} =
              base
              |> Map.put(:severity_mapping, %{custom_failure: :p1})
              |> OperationsPosture.new()
 
-    assert message =~ "severity_mapping_family"
+    assert String.contains?(message, "severity_mapping_family")
   end
 end

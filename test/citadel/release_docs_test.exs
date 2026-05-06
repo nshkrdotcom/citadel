@@ -10,16 +10,16 @@ defmodule Citadel.ReleaseDocsTest do
     Enum.each(@docs_paths, fn path ->
       doc = File.read!(path)
 
-      assert doc =~ "mix release.prepare",
+      assert String.contains?(doc, "mix release.prepare"),
              "#{path} must describe bundle preparation explicitly"
 
-      assert doc =~ "mix release.track",
+      assert String.contains?(doc, "mix release.track"),
              "#{path} must describe projection tracking explicitly"
 
-      assert doc =~ "mix release.archive",
+      assert String.contains?(doc, "mix release.archive"),
              "#{path} must describe bundle archival explicitly"
 
-      assert doc =~ "projection/citadel",
+      assert String.contains?(doc, "projection/citadel"),
              "#{path} must describe the projection branch explicitly"
     end)
   end

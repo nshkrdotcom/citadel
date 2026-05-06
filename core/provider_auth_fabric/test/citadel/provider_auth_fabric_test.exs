@@ -162,7 +162,7 @@ defmodule Citadel.ProviderAuthFabricTest do
              })
 
     assert audit.redacted == true
-    refute inspect(audit) =~ "sk-live-token"
+    refute String.contains?(inspect(audit), "sk-live-token")
 
     assert {:ok, fence} =
              ProviderAuthFabric.fence_event(lease, %{checked_at: ~U[2026-05-04 00:03:00Z]})
@@ -178,8 +178,8 @@ defmodule Citadel.ProviderAuthFabricTest do
         ["sk-live-token"]
       )
 
-    refute inspect(receipt) =~ "sk-live-token"
-    assert inspect(receipt) =~ "[REDACTED]"
+    refute String.contains?(inspect(receipt), "sk-live-token")
+    assert String.contains?(inspect(receipt), "[REDACTED]")
   end
 
   defp registration_refs do

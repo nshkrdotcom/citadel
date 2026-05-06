@@ -133,7 +133,7 @@ defmodule Citadel.ObservabilityValuesTest do
       )
 
     refute Map.has_key?(envelope.attributes, "raw_text")
-    refute inspect(envelope.attributes) =~ "open the repo"
+    refute String.contains?(inspect(envelope.attributes), "open the repo")
 
     assert %{
              "artifact_kind" => "trace_attribute_overflow_summary",
@@ -173,7 +173,7 @@ defmodule Citadel.ObservabilityValuesTest do
              get_in(envelope.attributes, ["deep_map", "child", "child", "child", "child"])
 
     refute Map.has_key?(envelope.attributes, "raw_webhook_body")
-    refute inspect(envelope.attributes) =~ "do not inline"
+    refute String.contains?(inspect(envelope.attributes), "do not inline")
 
     assert %{"overflow_reasons" => ["raw_payload_field"], "spillover_count" => 1} =
              Map.fetch!(envelope.attributes, TraceEnvelope.trace_attribute_overflow_key())

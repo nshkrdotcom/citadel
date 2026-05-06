@@ -30,12 +30,12 @@ defmodule Citadel.AuthorityContract.RevisionEpochLeaseContractsTest do
                  system_actor_ref: nil
              })
 
-    assert message =~ "requires principal_ref or system_actor_ref"
+    assert String.contains?(message, "requires principal_ref or system_actor_ref")
 
     assert {:error, %ArgumentError{message: message}} =
              InstallationRevisionEpoch.new(%{base_revision_epoch() | stale_reason: "lease_stale"})
 
-    assert message =~ "accepted fences must use stale_reason none"
+    assert String.contains?(message, "accepted fences must use stale_reason none")
   end
 
   test "installation revision epoch requires stale attempted evidence for rejects" do
@@ -58,7 +58,7 @@ defmodule Citadel.AuthorityContract.RevisionEpochLeaseContractsTest do
                  stale_reason: "none"
              })
 
-    assert message =~ "rejected fences require stale attempted evidence"
+    assert String.contains?(message, "rejected fences require stale attempted evidence")
   end
 
   test "lease revocation accepts durable invalidation evidence" do
@@ -74,12 +74,12 @@ defmodule Citadel.AuthorityContract.RevisionEpochLeaseContractsTest do
     assert {:error, %ArgumentError{message: message}} =
              LeaseRevocation.new(%{base_lease_revocation() | post_revocation_attempt_ref: nil})
 
-    assert message =~ "post_revocation_attempt_ref"
+    assert String.contains?(message, "post_revocation_attempt_ref")
 
     assert {:error, %ArgumentError{message: message}} =
              LeaseRevocation.new(%{base_lease_revocation() | lease_scope: %{}})
 
-    assert message =~ "lease_scope must be a non-empty JSON object"
+    assert String.contains?(message, "lease_scope must be a non-empty JSON object")
   end
 
   defp base_revision_epoch do

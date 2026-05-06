@@ -131,7 +131,7 @@ defmodule Citadel.WorkspaceTest do
         stderr_to_stdout: true
       )
 
-    assert output =~ "citadel"
+    assert String.contains?(output, "citadel")
   end
 
   defp execution_plane_dependency_declared?(%{requirement: requirement, opts: []})
@@ -139,7 +139,8 @@ defmodule Citadel.WorkspaceTest do
        do: true
 
   defp execution_plane_dependency_declared?(%{requirement: nil, opts: opts}) do
-    to_string(opts[:git]) =~ "/execution_plane" and opts[:subdir] == "core/execution_plane"
+    String.contains?(to_string(opts[:git]), "/execution_plane") and
+      opts[:subdir] == "core/execution_plane"
   end
 
   defp execution_plane_dependency_declared?(dependency) when is_list(dependency) do

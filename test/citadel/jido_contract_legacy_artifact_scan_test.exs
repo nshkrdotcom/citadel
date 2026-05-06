@@ -37,8 +37,8 @@ defmodule Citadel.JidoContractLegacyArtifactScanTest do
       |> Path.join("docs/shared_contract_dependency_strategy.md")
       |> File.read!()
 
-    assert strategy =~ "`jido_integration_v2_contracts`"
-    assert strategy =~ "non-publishable generated history"
+    assert String.contains?(strategy, "`jido_integration_v2_contracts`")
+    assert String.contains?(strategy, "non-publishable generated history")
   end
 
   test "projection lock is generated and not tracked source" do

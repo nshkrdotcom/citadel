@@ -51,7 +51,7 @@ defmodule Citadel.Kernel.StateContinuityHardeningTest do
     end)
 
     assert_receive {:DOWN, ^monitor, :process, ^pid, reason}, 1_000
-    assert inspect(reason) =~ "Citadel.Kernel.KernelSnapshot invariant failure"
+    assert String.contains?(inspect(reason), "Citadel.Kernel.KernelSnapshot invariant failure")
 
     wait_until(fn ->
       case KernelSnapshot.read_snapshot(kernel_snapshot_name,
@@ -131,7 +131,7 @@ defmodule Citadel.Kernel.StateContinuityHardeningTest do
     end)
 
     assert_receive {:DOWN, ^monitor, :process, ^session_server, reason}, 1_000
-    assert inspect(reason) =~ "Citadel.Kernel.SessionServer invariant failure"
+    assert String.contains?(inspect(reason), "Citadel.Kernel.SessionServer invariant failure")
 
     assert {:ok, persisted_blob} =
              SessionDirectory.fetch_persisted_blob(session_directory_name, "sess-owner-guard")

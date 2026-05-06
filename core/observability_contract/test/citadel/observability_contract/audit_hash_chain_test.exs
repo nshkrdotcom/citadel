@@ -21,12 +21,12 @@ defmodule Citadel.ObservabilityContract.AuditHashChainTest do
     assert {:error, %ArgumentError{message: message}} =
              AuditHashChain.new(%{base_link() | principal_ref: nil, system_actor_ref: nil})
 
-    assert message =~ "requires principal_ref or system_actor_ref"
+    assert String.contains?(message, "requires principal_ref or system_actor_ref")
 
     assert {:error, %ArgumentError{message: message}} =
              AuditHashChain.new(%{base_link() | event_hash: "not-a-hash"})
 
-    assert message =~ "event_hash must be a sha256 hash"
+    assert String.contains?(message, "event_hash must be a sha256 hash")
   end
 
   test "verifies chain continuity without rewriting previous links" do

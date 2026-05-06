@@ -131,42 +131,42 @@ defmodule Citadel.ObservabilityContract.CardinalityBoundsTest do
              |> Map.delete(:max_attribute_value_bytes)
              |> CardinalityBounds.new()
 
-    assert message =~ "missing required field"
+    assert String.contains?(message, "missing required field")
 
     assert {:error, %ArgumentError{message: message}} =
              base
              |> Map.put(:metric_label_allowlist, [:event_name, :trace_id])
              |> CardinalityBounds.new()
 
-    assert message =~ "metric_label_allowlist overlaps with its blocklist"
+    assert String.contains?(message, "metric_label_allowlist overlaps with its blocklist")
 
     assert {:error, %ArgumentError{message: message}} =
              base
              |> Map.delete(:sample_policy)
              |> CardinalityBounds.new()
 
-    assert message =~ "missing required field"
+    assert String.contains?(message, "missing required field")
 
     assert {:error, %ArgumentError{message: message}} =
              base
              |> Map.put(:sample_policy, :unbounded_success)
              |> CardinalityBounds.new()
 
-    assert message =~ "sample_policy"
+    assert String.contains?(message, "sample_policy")
 
     assert {:error, %ArgumentError{message: message}} =
              base
              |> Map.delete(:overflow_safe_action)
              |> CardinalityBounds.new()
 
-    assert message =~ "missing required field"
+    assert String.contains?(message, "missing required field")
 
     assert {:error, %ArgumentError{message: message}} =
              base
              |> Map.put(:overflow_safe_action, :append_unbounded)
              |> CardinalityBounds.new()
 
-    assert message =~ "overflow_safe_action"
+    assert String.contains?(message, "overflow_safe_action")
   end
 
   test "audit and incident surfaces declare amplification guards" do

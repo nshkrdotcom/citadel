@@ -72,7 +72,7 @@ defmodule Citadel.AuthorityContract.AuthorityPacket.V2Test do
     assert dumped.provider_account_ref == "provider-account://tenant/codex/a"
     assert dumped.credential_handle_ref == "credential-handle://tenant/codex/a"
     assert dumped.attach_grant_ref == "attach-grant://tenant/sandbox/a"
-    refute inspect(dumped) =~ "sk-live"
+    refute String.contains?(inspect(dumped), "sk-live")
   end
 
   test "rejects oversized authority packet hash input before canonical JSON encoding" do

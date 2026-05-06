@@ -393,7 +393,7 @@ defmodule Citadel.DomainSurface.AdapterStateAndLineageChaosTest do
 
     assert error.category == :unsupported
     assert error.code == :unsupported_stateful_orchestration
-    assert error.message =~ "durable backing"
+    assert String.contains?(error.message, "durable backing")
   end
 
   defp start_runtime_agent(overrides \\ %{}) do

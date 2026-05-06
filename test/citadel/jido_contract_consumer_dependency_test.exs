@@ -24,37 +24,37 @@ defmodule Citadel.JidoContractConsumerDependencyTest do
     for {mix_file, relative_path} <- @local_welded_slice_deps do
       source = File.read!(Path.join(@repo_root, mix_file))
 
-      assert source =~ "{:jido_integration_contracts, path: \"#{relative_path}\"}"
-      refute source =~ "github.com/agentjido/jido_integration"
-      refute source =~ "core/contracts"
+      assert String.contains?(source, "{:jido_integration_contracts, path: \"#{relative_path}\"}")
+      refute String.contains?(source, "github.com/agentjido/jido_integration")
+      refute String.contains?(source, "core/contracts")
     end
   end
 
   test "direct surface lock pins upstream sparse core contracts instead of local fork" do
     lock = File.read!(Path.join(@repo_root, "surfaces/citadel_domain_surface/mix.lock"))
 
-    assert lock =~ "\"jido_integration_contracts\""
-    assert lock =~ "https://github.com/agentjido/jido_integration.git"
-    assert lock =~ "sparse: \"core/contracts\""
-    refute lock =~ "core/jido_integration_contracts"
+    assert String.contains?(lock, "\"jido_integration_contracts\"")
+    assert String.contains?(lock, "https://github.com/agentjido/jido_integration.git")
+    assert String.contains?(lock, "sparse: \"core/contracts\"")
+    refute String.contains?(lock, "core/jido_integration_contracts")
   end
 
   test "generated projection embeds the current welded slice path only" do
     projection = File.read!(Path.join(@repo_root, "dist/hex/citadel/mix.exs"))
 
-    assert projection =~ "components/core/jido_integration_contracts"
-    refute projection =~ "jido_integration_v2_contracts"
+    assert String.contains?(projection, "components/core/jido_integration_contracts")
+    refute String.contains?(projection, "jido_integration_v2_contracts")
   end
 
   test "root workspace resolves external contract dependency through DependencyResolver" do
     resolver = File.read!(Path.join(@repo_root, "lib/citadel/build/dependency_resolver.ex"))
     workspace = File.read!(Path.join(@repo_root, "lib/citadel/workspace.ex"))
 
-    assert resolver =~ "def jido_integration_contracts"
-    assert resolver =~ "JIDO_INTEGRATION_PATH"
-    assert resolver =~ "core/contracts"
-    assert resolver =~ "@published_jido_integration_contracts_requirement"
-    assert workspace =~ "DependencyResolver.jido_integration_contracts_source()"
+    assert String.contains?(resolver, "def jido_integration_contracts")
+    assert String.contains?(resolver, "JIDO_INTEGRATION_PATH")
+    assert String.contains?(resolver, "core/contracts")
+    assert String.contains?(resolver, "@published_jido_integration_contracts_requirement")
+    assert String.contains?(workspace, "DependencyResolver.jido_integration_contracts_source()")
   end
 
   defp tracked_paths_with(suffix, fragment) do
@@ -62,6 +62,6 @@ defmodule Citadel.JidoContractConsumerDependencyTest do
 
     output
     |> String.split("\n", trim: true)
-    |> Enum.filter(&(File.read!(Path.join(@repo_root, &1)) =~ fragment))
+    |> Enum.filter(&String.contains?(File.read!(Path.join(@repo_root, &1)), fragment))
   end
 end

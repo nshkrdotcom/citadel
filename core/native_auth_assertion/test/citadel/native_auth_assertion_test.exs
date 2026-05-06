@@ -29,7 +29,7 @@ defmodule Citadel.NativeAuthAssertionTest do
              |> NativeAuthAssertion.new()
 
     assert Exception.message(error) == "native auth assertion rejects secret fields: raw_token"
-    refute Exception.message(error) =~ "sk-live-token"
+    refute String.contains?(Exception.message(error), "sk-live-token")
   end
 
   test "rejects provider payload and local private paths in metadata" do

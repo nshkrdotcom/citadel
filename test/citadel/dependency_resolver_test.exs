@@ -10,8 +10,8 @@ defmodule Citadel.DependencyResolverTest do
     assert File.read!(@resolver_source) != ""
     assert File.read!(@conformance_source) != ""
 
-    refute File.read!(@resolver_source) =~ "/home/home/p/g/n/"
-    refute File.read!(@conformance_source) =~ "/home/home/p/g/n/"
+    refute String.contains?(File.read!(@resolver_source), "/home/home/p/g/n/")
+    refute String.contains?(File.read!(@conformance_source), "/home/home/p/g/n/")
   end
 
   test "defaults the shared contracts dependency to the sibling jido_integration checkout" do

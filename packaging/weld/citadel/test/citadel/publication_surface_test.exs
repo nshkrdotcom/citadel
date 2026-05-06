@@ -55,7 +55,8 @@ defmodule Citadel.PublicationSurfaceTest do
        do: true
 
   defp execution_plane_dependency?({:execution_plane, nil, opts}) do
-    to_string(opts[:git]) =~ "/execution_plane" and opts[:subdir] == "core/execution_plane"
+    String.contains?(to_string(opts[:git]), "/execution_plane") and
+      opts[:subdir] == "core/execution_plane"
   end
 
   defp execution_plane_dependency?(_other), do: false
