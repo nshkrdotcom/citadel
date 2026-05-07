@@ -103,6 +103,16 @@ defmodule Citadel.JidoIntegrationBridgeTest do
     assert invocation.boundary_request["session_mode"] == "attached"
     assert invocation.execution_intent["command"] == "echo"
     assert invocation.execution_intent["args"] == ["hello"]
+
+    citadel_extensions = invocation.extensions["citadel"]
+
+    assert citadel_extensions["authority_persistence_posture"]["persistence_profile_ref"] ==
+             "persistence-profile://mickey_mouse"
+
+    assert citadel_extensions["execution_governance_persistence_posture"][
+             "persistence_profile_ref"
+           ] ==
+             "persistence-profile://mickey_mouse"
   end
 
   test "coerces shared lineage packets through the local choke point" do

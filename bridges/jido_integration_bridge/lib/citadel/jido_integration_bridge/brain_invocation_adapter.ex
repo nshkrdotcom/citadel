@@ -9,6 +9,7 @@ defmodule Citadel.JidoIntegrationBridge.BrainInvocationAdapter do
   """
 
   alias Citadel.AuthorityContract.AuthorityDecision.V1, as: AuthorityDecisionV1
+  alias Citadel.AuthorityContract.PersistencePosture
   alias Citadel.ExecutionGovernance.V1, as: ExecutionGovernanceV1
   alias Citadel.ExecutionIntentEnvelope.V2, as: ExecutionIntentEnvelopeV2
   alias Jido.Integration.V2.AuthorityAuditEnvelope
@@ -134,10 +135,28 @@ defmodule Citadel.JidoIntegrationBridge.BrainInvocationAdapter do
         "causal_group_id" => envelope.causal_group_id,
         "invocation_schema_version" => envelope.invocation_schema_version,
         "selected_step_id" => selected_step_id!(envelope),
-        "downstream_scope" => Map.get(envelope.extensions, "downstream_scope")
+        "downstream_scope" => Map.get(envelope.extensions, "downstream_scope"),
+        "authority_persistence_posture" =>
+          envelope.authority_packet
+          |> AuthorityDecisionV1.persistence_posture()
+          |> PersistencePosture.string_keys(),
+        "execution_governance_persistence_posture" =>
+          execution_governance_persistence_posture(envelope.execution_governance)
       }
     }
     |> maybe_put_submission_dedupe_key(Map.get(envelope.extensions, "submission_dedupe_key"))
+  end
+
+  defp execution_governance_persistence_posture(%ExecutionGovernanceV1{} = governance) do
+    governance.extensions
+    |> get_in(["citadel", "persistence_posture"])
+    |> case do
+      %{} = posture ->
+        posture
+
+      _missing ->
+        PersistencePosture.memory(:authority_decision) |> PersistencePosture.string_keys()
+    end
   end
 
   defp maybe_put_submission_dedupe_key(extensions, value) when is_binary(value) and value != "" do

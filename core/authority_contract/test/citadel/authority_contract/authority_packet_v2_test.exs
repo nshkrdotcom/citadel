@@ -75,6 +75,32 @@ defmodule Citadel.AuthorityContract.AuthorityPacket.V2Test do
     refute String.contains?(inspect(dumped), "sk-live")
   end
 
+  test "persistence posture changes storage refs without changing authority semantics" do
+    memory_packet = sample_attrs() |> V2.put_hashes!()
+
+    durable_packet =
+      sample_attrs()
+      |> Map.merge(%{
+        persistence_profile_ref: "persistence-profile://integration_postgres",
+        persistence_tier_ref: "persistence-tier://postgres_shared",
+        capture_level_ref: "capture-level://refs_only",
+        store_set_ref: "store-set://integration_postgres",
+        store_partition_ref: "store-partition://postgres_shared/default",
+        retention_policy_ref: "retention://postgres_shared",
+        persistence_receipt_ref:
+          "persistence-receipt://citadel/authority_packet/integration_postgres"
+      })
+      |> V2.put_hashes!()
+
+    assert memory_packet.action == durable_packet.action
+    assert memory_packet.permission_decision_ref == durable_packet.permission_decision_ref
+    assert memory_packet.tenant_ref == durable_packet.tenant_ref
+    assert V2.persistence_posture(memory_packet).durable? == false
+
+    assert V2.persistence_posture(durable_packet).persistence_tier_ref ==
+             "persistence-tier://postgres_shared"
+  end
+
   test "rejects oversized authority packet hash input before canonical JSON encoding" do
     attrs =
       sample_attrs()

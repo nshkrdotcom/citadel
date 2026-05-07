@@ -10,6 +10,7 @@ defmodule Citadel.AuthorityContract.AuthorityPacket.V2 do
 
   alias Citadel.ContractCore.AttrMap
   alias Citadel.ContractCore.CanonicalJson
+  alias Citadel.AuthorityContract.PersistencePosture
 
   @packet_name "Citadel.AuthorityPacketV2.v1"
   @contract_version "1.0.0"
@@ -42,6 +43,14 @@ defmodule Citadel.AuthorityContract.AuthorityPacket.V2 do
     :target_ref,
     :attach_grant_ref,
     :authority_decision_ref,
+    :persistence_profile_ref,
+    :persistence_tier_ref,
+    :capture_level_ref,
+    :store_set_ref,
+    :store_partition_ref,
+    :retention_policy_ref,
+    :debug_tap_ref,
+    :persistence_receipt_ref,
     :redaction_ref,
     :resource_ref,
     :subject_ref,
@@ -81,6 +90,14 @@ defmodule Citadel.AuthorityContract.AuthorityPacket.V2 do
     :target_ref,
     :attach_grant_ref,
     :authority_decision_ref,
+    :persistence_profile_ref,
+    :persistence_tier_ref,
+    :capture_level_ref,
+    :store_set_ref,
+    :store_partition_ref,
+    :retention_policy_ref,
+    :debug_tap_ref,
+    :persistence_receipt_ref,
     :redaction_ref
   ]
 
@@ -115,6 +132,14 @@ defmodule Citadel.AuthorityContract.AuthorityPacket.V2 do
           target_ref: json_ref() | nil,
           attach_grant_ref: json_ref() | nil,
           authority_decision_ref: json_ref() | nil,
+          persistence_profile_ref: json_ref() | nil,
+          persistence_tier_ref: json_ref() | nil,
+          capture_level_ref: json_ref() | nil,
+          store_set_ref: json_ref() | nil,
+          store_partition_ref: json_ref() | nil,
+          retention_policy_ref: json_ref() | nil,
+          debug_tap_ref: json_ref() | nil,
+          persistence_receipt_ref: json_ref() | nil,
           redaction_ref: json_ref() | nil,
           resource_ref: json_ref(),
           subject_ref: json_ref(),
@@ -232,6 +257,29 @@ defmodule Citadel.AuthorityContract.AuthorityPacket.V2 do
     packet.decision_hash == hash and packet.canonical_json_hash == hash
   end
 
+  @spec persistence_posture(t()) :: map()
+  def persistence_posture(%__MODULE__{} = packet) do
+    %{
+      persistence_profile_ref: packet.persistence_profile_ref,
+      persistence_tier_ref: packet.persistence_tier_ref,
+      capture_level_ref: packet.capture_level_ref,
+      store_set_ref: packet.store_set_ref,
+      store_partition_ref: packet.store_partition_ref,
+      retention_policy_ref: packet.retention_policy_ref,
+      debug_tap_ref: packet.debug_tap_ref,
+      persistence_receipt_ref: packet.persistence_receipt_ref
+    }
+    |> Enum.reject(fn {_key, value} -> is_nil(value) end)
+    |> Map.new()
+    |> case do
+      posture when map_size(posture) > 0 ->
+        PersistencePosture.from_attrs(:authority_packet, %{persistence_posture: posture})
+
+      _empty ->
+        PersistencePosture.memory(:authority_packet)
+    end
+  end
+
   defp build!(attrs) do
     attrs = AttrMap.normalize!(attrs, "#{@packet_name} attrs")
 
@@ -280,6 +328,14 @@ defmodule Citadel.AuthorityContract.AuthorityPacket.V2 do
       target_ref: optional_ref(attrs, :target_ref),
       attach_grant_ref: optional_ref(attrs, :attach_grant_ref),
       authority_decision_ref: optional_ref(attrs, :authority_decision_ref),
+      persistence_profile_ref: optional_ref(attrs, :persistence_profile_ref),
+      persistence_tier_ref: optional_ref(attrs, :persistence_tier_ref),
+      capture_level_ref: optional_ref(attrs, :capture_level_ref),
+      store_set_ref: optional_ref(attrs, :store_set_ref),
+      store_partition_ref: optional_ref(attrs, :store_partition_ref),
+      retention_policy_ref: optional_ref(attrs, :retention_policy_ref),
+      debug_tap_ref: optional_ref(attrs, :debug_tap_ref),
+      persistence_receipt_ref: optional_ref(attrs, :persistence_receipt_ref),
       redaction_ref: optional_ref(attrs, :redaction_ref),
       resource_ref: attrs |> AttrMap.fetch!(:resource_ref, @packet_name) |> ref!(:resource_ref),
       subject_ref: attrs |> AttrMap.fetch!(:subject_ref, @packet_name) |> ref!(:subject_ref),

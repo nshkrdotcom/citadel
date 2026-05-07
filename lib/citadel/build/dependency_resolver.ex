@@ -15,6 +15,9 @@ defmodule Citadel.Build.DependencyResolver do
   @default_execution_plane_path Path.expand("../execution_plane", @repo_root)
   @execution_plane_package_subdir "core/execution_plane"
   @published_execution_plane_requirement "~> 0.1.0"
+  @default_ground_plane_path Path.expand("../ground_plane", @repo_root)
+  @ground_plane_persistence_policy_subdir "core/persistence_policy"
+  @published_ground_plane_persistence_policy_requirement "~> 0.1.0"
 
   def jido_integration_contracts(opts \\ []) do
     case jido_integration_contracts_source() do
@@ -78,6 +81,26 @@ defmodule Citadel.Build.DependencyResolver do
     not is_nil(resolve_execution_plane_path())
   end
 
+  def ground_plane_persistence_policy_weld_dependency do
+    case resolve_ground_plane_path() do
+      nil ->
+        [
+          requirement: @published_ground_plane_persistence_policy_requirement,
+          opts: []
+        ]
+
+      path ->
+        [
+          requirement: nil,
+          opts: [git: "file://#{path}", subdir: @ground_plane_persistence_policy_subdir]
+        ]
+    end
+  end
+
+  def local_ground_plane_persistence_policy_weld_dependency? do
+    not is_nil(resolve_ground_plane_path())
+  end
+
   defp resolve_contracts_path do
     if contracts_path_resolution_disabled?() do
       nil
@@ -105,6 +128,10 @@ defmodule Citadel.Build.DependencyResolver do
 
   defp resolve_execution_plane_path do
     existing_path(@default_execution_plane_path)
+  end
+
+  defp resolve_ground_plane_path do
+    existing_path(@default_ground_plane_path)
   end
 
   defp explicit_contracts_path do

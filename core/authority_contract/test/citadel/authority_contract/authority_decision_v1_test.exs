@@ -63,6 +63,40 @@ defmodule Citadel.AuthorityContract.AuthorityDecision.V1Test do
     end
   end
 
+  test "carries default and durable persistence posture as evidence without changing authority fields" do
+    memory_packet = read_fixture!("minimal.json") |> V1.new!()
+
+    assert V1.persistence_posture(memory_packet).persistence_profile_ref ==
+             "persistence-profile://mickey_mouse"
+
+    durable_packet =
+      "minimal.json"
+      |> read_fixture!()
+      |> put_in(["extensions", "citadel"], %{
+        "persistence_posture" => %{
+          "persistence_profile_ref" => "persistence-profile://integration_postgres",
+          "persistence_tier_ref" => "persistence-tier://postgres_shared",
+          "capture_level_ref" => "capture-level://refs_only",
+          "store_set_ref" => "store-set://integration_postgres",
+          "store_partition_ref" => "store-partition://postgres_shared/default",
+          "retention_policy_ref" => "retention://postgres_shared",
+          "persistence_receipt_ref" =>
+            "persistence-receipt://citadel/authority_decision/integration_postgres",
+          "store_ref" => "store://postgres_shared",
+          "durable?" => true,
+          "restart_durability_claim" => "durable"
+        }
+      })
+      |> V1.new!()
+
+    assert durable_packet.decision_hash == memory_packet.decision_hash
+
+    assert V1.persistence_posture(durable_packet).persistence_tier_ref ==
+             "persistence-tier://postgres_shared"
+
+    assert V1.persistence_posture(durable_packet).durable? == true
+  end
+
   test "rejects unknown extension namespaces" do
     fixture = read_fixture!("minimal.json")
     attrs = put_in(fixture, ["extensions", "other"], %{})

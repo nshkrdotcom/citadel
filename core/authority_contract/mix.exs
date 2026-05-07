@@ -22,6 +22,7 @@ defmodule Citadel.AuthorityContract.MixProject do
     [
       {:citadel_contract_core, path: "../contract_core"},
       {:execution_plane, path: "../../../execution_plane/core/execution_plane"},
+      {:ground_plane_persistence_policy, path: "../../../ground_plane/core/persistence_policy"},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
     ]
   end

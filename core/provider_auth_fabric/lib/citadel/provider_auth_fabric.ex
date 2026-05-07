@@ -3,6 +3,7 @@ defmodule Citadel.ProviderAuthFabric do
   Contract-level provider auth fabric.
   """
 
+  alias Citadel.AuthorityContract.PersistencePosture
   alias Citadel.NativeAuthAssertion
 
   @provider_families [
@@ -87,7 +88,8 @@ defmodule Citadel.ProviderAuthFabric do
       :target_ref,
       :redaction_ref
     ]
-    defstruct @enforce_keys ++ [native_auth_assertion_ref: nil, metadata: %{}]
+    defstruct @enforce_keys ++
+                [native_auth_assertion_ref: nil, persistence_posture: nil, metadata: %{}]
 
     @type t :: %__MODULE__{}
   end
@@ -103,7 +105,7 @@ defmodule Citadel.ProviderAuthFabric do
       :operation_policy_ref,
       :redaction_ref
     ]
-    defstruct @enforce_keys ++ [status: :active, metadata: %{}]
+    defstruct @enforce_keys ++ [status: :active, persistence_posture: nil, metadata: %{}]
 
     @type t :: %__MODULE__{}
   end
@@ -129,7 +131,13 @@ defmodule Citadel.ProviderAuthFabric do
       :fence_token,
       :expires_at
     ]
-    defstruct @enforce_keys ++ [renewed_from_lease_ref: nil, status: :issued, metadata: %{}]
+    defstruct @enforce_keys ++
+                [
+                  renewed_from_lease_ref: nil,
+                  status: :issued,
+                  persistence_posture: nil,
+                  metadata: %{}
+                ]
 
     @type t :: %__MODULE__{}
   end
@@ -161,6 +169,7 @@ defmodule Citadel.ProviderAuthFabric do
          target_ref: value!(attrs, :target_ref),
          redaction_ref: value!(attrs, :redaction_ref),
          native_auth_assertion_ref: field_value(attrs, :native_auth_assertion_ref),
+         persistence_posture: PersistencePosture.from_attrs(:provider_auth_fabric_refs, attrs),
          metadata: safe_metadata(field_value(attrs, :metadata))
        }}
     end
@@ -191,6 +200,7 @@ defmodule Citadel.ProviderAuthFabric do
          connector_instance_ref: value!(merged, :connector_instance_ref),
          operation_policy_ref: value!(merged, :operation_policy_ref),
          redaction_ref: value!(merged, :redaction_ref),
+         persistence_posture: PersistencePosture.from_attrs(:provider_auth_fabric_refs, merged),
          metadata: safe_metadata(field_value(merged, :metadata))
        }}
     end
@@ -258,6 +268,7 @@ defmodule Citadel.ProviderAuthFabric do
          target_grant_revision: lease.target_grant_revision,
          rotation_epoch: lease.rotation_epoch,
          fence_token: lease.fence_token,
+         persistence_posture: lease.persistence_posture,
          redacted: true
        }}
     end
@@ -313,6 +324,7 @@ defmodule Citadel.ProviderAuthFabric do
          revocation_ref: value!(attrs, :revocation_ref),
          revoked_at: value!(attrs, :revoked_at),
          status: :revoked,
+         persistence_posture: lease.persistence_posture,
          redacted: true
        }}
     end
@@ -334,6 +346,7 @@ defmodule Citadel.ProviderAuthFabric do
          cleanup_ref: value!(attrs, :cleanup_ref),
          cleaned_at: value!(attrs, :cleaned_at),
          status: :cleaned,
+         persistence_posture: lease.persistence_posture,
          redacted: true
        }}
     end
@@ -355,6 +368,7 @@ defmodule Citadel.ProviderAuthFabric do
          target_ref: lease.target_ref,
          operation_class: lease.operation_class,
          redaction_ref: field_value(attrs, :redaction_ref),
+         persistence_posture: lease.persistence_posture,
          metadata: safe_event_metadata(field_value(attrs, :metadata)),
          redacted: true
        }
@@ -383,6 +397,7 @@ defmodule Citadel.ProviderAuthFabric do
          rotation_epoch: lease.rotation_epoch,
          fence_token: lease.fence_token,
          checked_at: field_value(attrs, :checked_at),
+         persistence_posture: lease.persistence_posture,
          redacted: true
        }
        |> drop_empty_values()}
@@ -413,6 +428,7 @@ defmodule Citadel.ProviderAuthFabric do
          provider_account_ref: handle.provider_account_ref,
          authority_packet_ref: value!(attrs, :authority_packet_ref),
          system_authorization_ref: value!(attrs, :system_authorization_ref),
+         persistence_posture: handle.persistence_posture,
          status: :revoked
        }}
     end
@@ -431,6 +447,7 @@ defmodule Citadel.ProviderAuthFabric do
          authority_packet_ref: value!(attrs, :authority_packet_ref),
          system_authorization_ref: value!(attrs, :system_authorization_ref),
          redaction_ref: value!(attrs, :redaction_ref),
+         persistence_posture: PersistencePosture.from_attrs(:audit_evidence_hash_chain, attrs),
          metadata: safe_metadata(field_value(attrs, :metadata))
        }}
     end
@@ -553,6 +570,7 @@ defmodule Citadel.ProviderAuthFabric do
       renewed_from_lease_ref:
         renewed_from_lease_ref || field_value(attrs, :renewed_from_lease_ref),
       status: status,
+      persistence_posture: PersistencePosture.from_attrs(:provider_auth_fabric_refs, attrs),
       metadata: safe_metadata(field_value(attrs, :metadata))
     }
   end

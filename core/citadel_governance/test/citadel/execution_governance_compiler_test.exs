@@ -46,6 +46,11 @@ defmodule Citadel.ExecutionGovernanceCompilerTest do
     assert packet.placement["execution_family"] == "process"
     assert packet.operations["effect_classes"] == ["filesystem_write"]
     assert packet.extensions["citadel"]["selection_source"] == "compiler_test"
+
+    assert packet.extensions["citadel"]["persistence_posture"]["persistence_profile_ref"] ==
+             "persistence-profile://mickey_mouse"
+
+    assert packet.extensions["citadel"]["persistence_posture"]["durable?"] == false
   end
 
   test "does not require node-local absolute paths" do

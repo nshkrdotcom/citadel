@@ -3,6 +3,8 @@ defmodule Citadel.ConnectorBinding do
   Ref-only connector binding identity model.
   """
 
+  alias Citadel.AuthorityContract.PersistencePosture
+
   @provider_families [
     "amp",
     "claude",
@@ -116,6 +118,7 @@ defmodule Citadel.ConnectorBinding do
                 [
                   :credential_lease_ref,
                   lifecycle: :installed,
+                  persistence_posture: nil,
                   metadata: %{},
                   binding_schema: "Citadel.ConnectorBinding.v1"
                 ]
@@ -167,6 +170,7 @@ defmodule Citadel.ConnectorBinding do
          evidence_ref: value!(attrs, :evidence_ref),
          redaction_ref: value!(attrs, :redaction_ref),
          lifecycle: lifecycle,
+         persistence_posture: PersistencePosture.from_attrs(:connector_binding_refs, attrs),
          metadata: safe_metadata(field_value(attrs, :metadata))
        }}
     end
@@ -219,6 +223,7 @@ defmodule Citadel.ConnectorBinding do
       evidence_ref: binding.evidence_ref,
       redaction_ref: binding.redaction_ref,
       lifecycle: binding.lifecycle,
+      persistence_posture: binding.persistence_posture,
       raw_material_present?: false
     }
   end
@@ -253,7 +258,8 @@ defmodule Citadel.ConnectorBinding do
 
   defp normalize_key(key) when is_binary(key) do
     Enum.find(
-      @required_refs ++ @optional_refs ++ @forbidden_material ++ [:lifecycle, :metadata],
+      @required_refs ++
+        @optional_refs ++ @forbidden_material ++ [:lifecycle, :persistence_posture, :metadata],
       key,
       fn
         candidate -> Atom.to_string(candidate) == key

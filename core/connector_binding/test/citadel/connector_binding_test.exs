@@ -10,10 +10,39 @@ defmodule Citadel.ConnectorBindingTest do
     assert binding.connector_instance_ref == "connector-instance://tenant-1/codex/default"
     assert binding.provider_account_ref == "provider-account://tenant-1/codex/account-a"
     assert binding.credential_handle_ref == "credential-handle://tenant-1/codex/account-a/primary"
+
+    assert binding.persistence_posture.persistence_profile_ref ==
+             "persistence-profile://mickey_mouse"
+
     refute binding.connector_instance_ref == binding.provider_account_ref
     refute binding.connector_instance_ref == binding.credential_handle_ref
 
     assert ConnectorBinding.redacted_evidence(binding).raw_material_present? == false
+  end
+
+  test "durable binding posture changes storage refs without changing lease scope authority" do
+    durable_posture = %{
+      persistence_posture: %{
+        persistence_profile_ref: "persistence-profile://integration_postgres",
+        persistence_tier_ref: "persistence-tier://postgres_shared",
+        capture_level_ref: "capture-level://refs_only",
+        store_set_ref: "store-set://integration_postgres",
+        store_partition_ref: "store-partition://postgres_shared/default",
+        retention_policy_ref: "retention://postgres_shared",
+        persistence_receipt_ref:
+          "persistence-receipt://citadel/connector_binding_refs/integration_postgres",
+        store_ref: "store://postgres_shared",
+        durable?: true,
+        restart_durability_claim: :durable
+      }
+    }
+
+    assert {:ok, memory} = ConnectorBinding.bind(valid_attrs())
+    assert {:ok, durable} = valid_attrs() |> Map.merge(durable_posture) |> ConnectorBinding.bind()
+
+    assert ConnectorBinding.identity_key(memory) == ConnectorBinding.identity_key(durable)
+    assert :ok = ConnectorBinding.authorize_lease(durable, lease_scope())
+    assert durable.persistence_posture.durable? == true
   end
 
   test "two accounts under one provider cannot merge identity scope" do

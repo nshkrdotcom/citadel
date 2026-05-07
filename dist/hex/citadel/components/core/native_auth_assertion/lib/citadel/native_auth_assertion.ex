@@ -3,6 +3,8 @@ defmodule Citadel.NativeAuthAssertion do
   Ref-only native auth assertion contract.
   """
 
+  alias Citadel.AuthorityContract.PersistencePosture
+
   @provider_families [
     "amp",
     "claude",
@@ -69,7 +71,7 @@ defmodule Citadel.NativeAuthAssertion do
   ]
 
   @enforce_keys @required_fields
-  defstruct @required_fields ++ [expires_at: nil, metadata: %{}]
+  defstruct @required_fields ++ [expires_at: nil, persistence_posture: nil, metadata: %{}]
 
   @type t :: %__MODULE__{
           assertion_ref: String.t(),
@@ -90,6 +92,7 @@ defmodule Citadel.NativeAuthAssertion do
           redaction_class: atom(),
           proof_hash: String.t(),
           evidence_ref: String.t(),
+          persistence_posture: map() | nil,
           metadata: map()
         }
 
@@ -135,6 +138,7 @@ defmodule Citadel.NativeAuthAssertion do
          redaction_class: redaction_class,
          proof_hash: string!(attrs, :proof_hash),
          evidence_ref: string!(attrs, :evidence_ref),
+         persistence_posture: PersistencePosture.from_attrs(:native_auth_assertion_refs, attrs),
          metadata: safe_metadata(Map.get(attrs, :metadata, %{}))
        }}
     end
@@ -171,6 +175,7 @@ defmodule Citadel.NativeAuthAssertion do
       redaction_class: assertion.redaction_class,
       proof_hash: assertion.proof_hash,
       evidence_ref: assertion.evidence_ref,
+      persistence_posture: assertion.persistence_posture,
       metadata: assertion.metadata
     }
   end

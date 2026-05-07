@@ -4,6 +4,7 @@ defmodule Citadel.ExecutionGovernanceCompiler do
   """
 
   alias Citadel.AuthorityContract.AuthorityDecision.V1, as: AuthorityDecisionV1
+  alias Citadel.AuthorityContract.PersistencePosture
   alias Citadel.BoundaryIntent
   alias Citadel.ContractCore.Value
   alias Citadel.ExecutionGovernance.V1, as: ExecutionGovernanceV1
@@ -29,6 +30,7 @@ defmodule Citadel.ExecutionGovernanceCompiler do
     :cpu_class,
     :memory_class,
     :wall_clock_budget_ms,
+    :persistence_posture,
     :extensions
   ]
 
@@ -254,6 +256,7 @@ defmodule Citadel.ExecutionGovernanceCompiler do
           %{"citadel" => %{}}
         )
         |> include_action_binding(authority_packet)
+        |> include_persistence_posture(authority_packet, attrs)
     })
   end
 
@@ -286,5 +289,22 @@ defmodule Citadel.ExecutionGovernanceCompiler do
       value when is_binary(value) and value != "" -> value
       _other -> nil
     end
+  end
+
+  defp include_persistence_posture(extensions, %AuthorityDecisionV1{} = authority_packet, attrs) do
+    posture =
+      case Map.get(attrs, :persistence_posture) || Map.get(attrs, "persistence_posture") do
+        %{} = supplied ->
+          PersistencePosture.resolve(:authority_decision, persistence_posture: supplied)
+
+        _missing ->
+          AuthorityDecisionV1.persistence_posture(authority_packet)
+      end
+      |> PersistencePosture.string_keys()
+
+    Map.update(extensions, "citadel", %{"persistence_posture" => posture}, fn
+      %{} = citadel -> Map.put(citadel, "persistence_posture", posture)
+      _other -> %{"persistence_posture" => posture}
+    end)
   end
 end

@@ -13,6 +13,7 @@ defmodule Citadel.AuthorityContract do
   alias Citadel.AuthorityContract.InstallationRevisionEpoch.V1, as: InstallationRevisionEpochV1
   alias Citadel.AuthorityContract.LeaseRevocation.V1, as: LeaseRevocationV1
   alias Citadel.AuthorityContract.OperatorRecoveryAction.V1, as: OperatorRecoveryActionV1
+  alias Citadel.AuthorityContract.PersistencePosture
   alias Citadel.AuthorityContract.RejectionEnvelope.V1, as: RejectionEnvelopeV1
   alias Citadel.OperatorWorkflowSignalAuthorityV1
 
@@ -36,7 +37,7 @@ defmodule Citadel.AuthorityContract do
       :contract_fixtures
     ],
     internal_dependencies: [:citadel_contract_core],
-    external_dependencies: []
+    external_dependencies: [:ground_plane_persistence_policy]
   }
 
   @extensions_namespaces AuthorityPacketV2.extensions_namespaces()
@@ -70,6 +71,9 @@ defmodule Citadel.AuthorityContract do
 
   @spec operator_workflow_signal_authority_module() :: module()
   def operator_workflow_signal_authority_module, do: OperatorWorkflowSignalAuthorityV1
+
+  @spec persistence_posture_module() :: module()
+  def persistence_posture_module, do: PersistencePosture
 
   @spec contract_version() :: String.t()
   def contract_version, do: AuthorityPacketV2.contract_version()

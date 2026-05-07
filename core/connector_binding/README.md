@@ -10,6 +10,11 @@ The package is ref-only. It rejects raw credential material, raw provider
 payloads, unmanaged env auth, native auth files, singleton clients, and default
 clients.
 
+Phase 6 adds persistence posture to bindings and redacted evidence. The default
+profile is memory-only. Durable profiles add store/tier/receipt refs without
+changing connector identity or allowing raw provider/auth material into persisted
+evidence.
+
 ## QC
 
 ```bash

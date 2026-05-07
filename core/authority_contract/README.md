@@ -1,6 +1,6 @@
 # Citadel Authority Contract
 
-Status: Phase 4 authority packet hardened.
+Status: Phase 6 persistence posture hardened.
 
 ## Owns
 
@@ -18,6 +18,9 @@ Status: Phase 4 authority packet hardened.
   idempotency, and lower-facts propagation refs
 - `Citadel.AuthorityContract.ExecutionPlaneAuthorityVerifier`, the adapter that
   lets an Execution Plane node host validate Citadel-authored authority refs
+- `Citadel.AuthorityContract.PersistencePosture`, the ref-only storage posture
+  facade for authority decisions, authority packets, provider auth refs, native
+  auth assertion refs, connector binding refs, and audit evidence hash chains
 - required field inventory and versioning rule for authority packet successors
 - the `extensions["citadel"]` posture for Citadel-only extras
 - contract-facing fixtures and validation boundary placement
@@ -27,6 +30,8 @@ Status: Phase 4 authority packet hardened.
 - `core/contract_core`
 - `execution_plane` package for authority-verifier behaviour and admission
   rejection values
+- `ground_plane_persistence_policy` for shared memory-by-default and durable
+  profile resolution
 
 ## Wave 2 Posture
 
@@ -88,3 +93,13 @@ The authority verifier checks only the opaque authority reference metadata that
 Execution Plane admission needs: reference identity, payload hash, policy
 version, decision id, decision hash, audience, and expiry posture. It does not
 interpret Brain policy and it does not host lower runtime code.
+
+## Persistence Posture
+
+Citadel authority contracts default to `persistence-profile://mickey_mouse`.
+Durable profiles are opt-in storage evidence only: they select ref-only store,
+tier, partition, retention, debug-tap, and receipt refs without changing
+authority semantics or storing raw credential/provider material. Authority
+decisions read optional persisted posture from `extensions["citadel"]`, and
+`AuthorityPacketV2.v1` carries optional posture refs for future durable receipt
+hand-off.

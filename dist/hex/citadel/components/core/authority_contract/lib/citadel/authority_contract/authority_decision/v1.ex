@@ -10,6 +10,8 @@ defmodule Citadel.AuthorityContract.AuthorityDecision.V1 do
   alias Citadel.ContractCore.AttrMap
   alias Citadel.ContractCore.CanonicalJson
 
+  alias Citadel.AuthorityContract.PersistencePosture
+
   @packet_name "AuthorityDecision.v1"
   @contract_version "v1"
   @extensions_namespaces ["citadel"]
@@ -84,6 +86,23 @@ defmodule Citadel.AuthorityContract.AuthorityDecision.V1 do
 
   @spec action_bound?(t()) :: boolean()
   def action_bound?(%__MODULE__{} = packet), do: not is_nil(for_action_ref(packet))
+
+  @spec persistence_posture(t()) :: map()
+  def persistence_posture(%__MODULE__{} = packet) do
+    packet.extensions
+    |> Map.get("citadel", %{})
+    |> case do
+      %{} = citadel -> Map.get(citadel, "persistence_posture")
+      _other -> nil
+    end
+    |> case do
+      %{} = posture ->
+        PersistencePosture.from_attrs(:authority_decision, %{persistence_posture: posture})
+
+      _missing ->
+        PersistencePosture.memory(:authority_decision)
+    end
+  end
 
   @spec require_for_action_ref!(t()) :: String.t()
   def require_for_action_ref!(%__MODULE__{} = packet) do

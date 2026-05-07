@@ -104,6 +104,8 @@ defmodule Citadel.MixProject do
       {:aitrace, "~> 0.1.0"},
       {:execution_plane,
        [git: "file:///home/home/p/g/n/execution_plane", subdir: "core/execution_plane"]},
+      {:ground_plane_persistence_policy,
+       [git: "file:///home/home/p/g/n/ground_plane", subdir: "core/persistence_policy"]},
       {:jcs, "~> 0.2.0"},
       {:telemetry, "~> 1.3"},
       {:zoi, "~> 0.17"},

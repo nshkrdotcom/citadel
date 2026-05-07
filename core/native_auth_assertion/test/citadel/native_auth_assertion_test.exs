@@ -18,8 +18,36 @@ defmodule Citadel.NativeAuthAssertionTest do
     assert assertion.redaction_class == :native_auth_metadata
     assert assertion.proof_hash == "proof-hash://codex/root-a"
 
+    assert assertion.persistence_posture.persistence_profile_ref ==
+             "persistence-profile://mickey_mouse"
+
     assert NativeAuthAssertion.summary(assertion).provider_account_ref ==
              "provider-account://tenant/codex/a"
+  end
+
+  test "durable posture remains ref-only and does not alter native auth assertion semantics" do
+    assert {:ok, memory} = NativeAuthAssertion.new(valid_attrs())
+
+    assert {:ok, durable} =
+             valid_attrs()
+             |> Map.put(:persistence_posture, %{
+               persistence_profile_ref: "persistence-profile://integration_postgres",
+               persistence_tier_ref: "persistence-tier://postgres_shared",
+               capture_level_ref: "capture-level://refs_only",
+               store_set_ref: "store-set://integration_postgres",
+               store_partition_ref: "store-partition://postgres_shared/default",
+               retention_policy_ref: "retention://postgres_shared",
+               persistence_receipt_ref:
+                 "persistence-receipt://citadel/native_auth_assertion_refs/integration_postgres",
+               store_ref: "store://postgres_shared",
+               durable?: true,
+               restart_durability_claim: :durable
+             })
+             |> NativeAuthAssertion.new()
+
+    assert durable.provider_account_ref == memory.provider_account_ref
+    assert durable.target_ref == memory.target_ref
+    assert durable.persistence_posture.durable? == true
   end
 
   test "rejects raw native auth material" do

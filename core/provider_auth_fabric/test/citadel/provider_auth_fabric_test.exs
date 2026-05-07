@@ -48,6 +48,11 @@ defmodule Citadel.ProviderAuthFabricTest do
     assert lease.credential_handle_ref == handle.credential_handle_ref
     assert lease.attach_grant_ref == "attach-grant://tenant/sandbox/a"
 
+    assert registration.persistence_posture.persistence_profile_ref ==
+             "persistence-profile://mickey_mouse"
+
+    assert lease.persistence_posture.durable? == false
+
     assert {:ok, revoked} =
              ProviderAuthFabric.revoke(handle, %{
                authority_packet_ref: "authority-packet://tenant/run/a",
@@ -65,6 +70,41 @@ defmodule Citadel.ProviderAuthFabricTest do
              })
 
     assert audit.metadata.credential_handle_ref == handle.credential_handle_ref
+  end
+
+  test "durable persistence posture does not change provider authority semantics" do
+    durable_posture = %{
+      persistence_posture: %{
+        persistence_profile_ref: "persistence-profile://integration_postgres",
+        persistence_tier_ref: "persistence-tier://postgres_shared",
+        capture_level_ref: "capture-level://refs_only",
+        store_set_ref: "store-set://integration_postgres",
+        store_partition_ref: "store-partition://postgres_shared/default",
+        retention_policy_ref: "retention://postgres_shared",
+        persistence_receipt_ref:
+          "persistence-receipt://citadel/provider_auth_fabric_refs/integration_postgres",
+        store_ref: "store://postgres_shared",
+        durable?: true,
+        restart_durability_claim: :durable
+      }
+    }
+
+    assert :ok = ProviderAuthFabric.authorize_provider_effect(effect_refs())
+
+    assert :ok =
+             ProviderAuthFabric.authorize_provider_effect(
+               Map.merge(effect_refs(), durable_posture)
+             )
+
+    assert {:ok, registration} =
+             ProviderAuthFabric.register_provider_account(
+               Map.merge(registration_refs(), durable_posture)
+             )
+
+    assert registration.persistence_posture.durable? == true
+
+    assert registration.persistence_posture.persistence_tier_ref ==
+             "persistence-tier://postgres_shared"
   end
 
   test "redeems governed leases only for matching provider account, operation, policy, target, and fence scope" do
