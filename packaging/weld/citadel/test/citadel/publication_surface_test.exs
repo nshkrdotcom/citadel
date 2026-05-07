@@ -31,6 +31,7 @@ defmodule Citadel.PublicationSurfaceTest do
 
     assert dependency_tuple(deps, :aitrace) == {:aitrace, "~> 0.1.0", []}
     assert execution_plane_dependency?(dependency_tuple(deps, :execution_plane))
+    assert ground_plane_policy_dependency?(dependency_tuple(deps, :ground_plane_persistence_policy))
     refute dependency_tuple(deps, :jido_integration_contracts)
   end
 
@@ -60,4 +61,15 @@ defmodule Citadel.PublicationSurfaceTest do
   end
 
   defp execution_plane_dependency?(_other), do: false
+
+  defp ground_plane_policy_dependency?({:ground_plane_persistence_policy, requirement, []})
+       when is_binary(requirement),
+       do: true
+
+  defp ground_plane_policy_dependency?({:ground_plane_persistence_policy, nil, opts}) do
+    String.contains?(to_string(opts[:git]), "/ground_plane") and
+      opts[:subdir] == "core/persistence_policy" and opts[:override]
+  end
+
+  defp ground_plane_policy_dependency?(_other), do: false
 end

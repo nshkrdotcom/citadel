@@ -21,3 +21,7 @@ The package owns operator- and release-facing observability contracts without
 coupling them to a backend. Audit evidence is append-only, hash-linked, scoped
 to tenant/installation/resource/authority/idempotency/trace/release refs, and
 must fail closed if actor or hash-chain continuity evidence is missing.
+
+## Persistence Documentation
+
+See `docs/persistence.md` for tiers, defaults, adapters, unsupported selections, config examples, restart claims, durability claims, debug sidecar behavior, redaction guarantees, migration or preflight behavior, and no-bypass scope when applicable.

@@ -26,3 +26,7 @@ Cross-repo coercion belongs in `Citadel.JidoIntegrationBridge.LineageCodec`.
 `sandbox.acceptable_attestation` into the runtime and gateway shadows so the
 Spine can build Execution Plane admission requests without inferring a hidden
 local fallback.
+
+## Persistence Documentation
+
+See `docs/persistence.md` for tiers, defaults, adapters, unsupported selections, config examples, restart claims, durability claims, debug sidecar behavior, redaction guarantees, migration or preflight behavior, and no-bypass scope when applicable.

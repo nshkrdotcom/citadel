@@ -103,3 +103,7 @@ authority semantics or storing raw credential/provider material. Authority
 decisions read optional persisted posture from `extensions["citadel"]`, and
 `AuthorityPacketV2.v1` carries optional posture refs for future durable receipt
 hand-off.
+
+## Persistence Documentation
+
+See `docs/persistence.md` for tiers, defaults, adapters, unsupported selections, config examples, restart claims, durability claims, debug sidecar behavior, redaction guarantees, migration or preflight behavior, and no-bypass scope when applicable.

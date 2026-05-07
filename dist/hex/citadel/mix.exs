@@ -105,7 +105,11 @@ defmodule Citadel.MixProject do
       {:execution_plane,
        [git: "file:///home/home/p/g/n/execution_plane", subdir: "core/execution_plane"]},
       {:ground_plane_persistence_policy,
-       [git: "file:///home/home/p/g/n/ground_plane", subdir: "core/persistence_policy"]},
+       [
+         git: "file:///home/home/p/g/n/ground_plane",
+         subdir: "core/persistence_policy",
+         override: true
+       ]},
       {:jcs, "~> 0.2.0"},
       {:telemetry, "~> 1.3"},
       {:zoi, "~> 0.17"},

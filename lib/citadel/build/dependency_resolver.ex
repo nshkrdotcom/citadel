@@ -92,7 +92,11 @@ defmodule Citadel.Build.DependencyResolver do
       path ->
         [
           requirement: nil,
-          opts: [git: "file://#{path}", subdir: @ground_plane_persistence_policy_subdir]
+          opts: [
+            git: "file://#{path}",
+            subdir: @ground_plane_persistence_policy_subdir,
+            override: true
+          ]
         ]
     end
   end

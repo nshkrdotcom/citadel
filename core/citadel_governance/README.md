@@ -59,3 +59,7 @@ mix hardening
 - `mix hardening.adversarial` runs the hostile-input property suite in `test/citadel/governance_adversarial_test.exs`
 - `mix hardening.mutation` runs build-failing mutation checks over `intent_envelope`, `decision_values`, `kernel_values`, and `runtime_values`
 - `mix hardening` runs both gates
+
+## Persistence Documentation
+
+See `docs/persistence.md` for tiers, defaults, adapters, unsupported selections, config examples, restart claims, durability claims, debug sidecar behavior, redaction guarantees, migration or preflight behavior, and no-bypass scope when applicable.
