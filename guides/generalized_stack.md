@@ -14,7 +14,8 @@ lanes, credential storage, product UI, or primitive persistence rules.
 Primary package groups:
 
 - `core/authority_contract`, `core/execution_governance_contract`,
-  `core/observability_contract`, and `core/contract_core`;
+  `core/context_authority_contract`, `core/observability_contract`, and
+  `core/contract_core`;
 - `core/policy_packs`, `core/citadel_governance`, `core/citadel_kernel`,
   `core/conformance`, `core/connector_binding`, `core/provider_auth_fabric`,
   and `core/native_auth_assertion`;
@@ -67,3 +68,11 @@ Citadel cleanup work removes provider-specific generic policy, bridge
 shortcuts, duplicated provider family classifiers, stale host-ingress shapes,
 and obsolete conformance fixtures only after replacement contracts and
 StackLab/Citadel tests are green.
+
+## Context ABI Authority
+
+`core/context_authority_contract` is the Citadel-owned seam for Context ABI
+packets. It authorizes context access, model class allowlists, route policies,
+payload modes, redaction posture, promotion, and rollback using ref-only
+requests and grants. It does not compile context packets, render prompts,
+invoke models, or record durable workflow truth.

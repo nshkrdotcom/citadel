@@ -50,8 +50,8 @@ runtime nodes permission to reinterpret the decision.
 The current workspace provides four practical layers:
 
 - contract packages for authority refs, execution governance packets,
-  observability values, Jido Integration shared contracts, and host/kernel
-  packet values
+  Context ABI authority grants, observability values, Jido Integration shared
+  contracts, and host/kernel packet values
 - policy-pack packages that compile coding-ops posture into explicit sandbox,
   egress, approval, tool, operation, workspace, command-class, and placement
   requirements
@@ -190,6 +190,7 @@ citadel/
   core/
     contract_core/
     authority_contract/
+    context_authority_contract/
     execution_governance_contract/
     observability_contract/
     policy_packs/

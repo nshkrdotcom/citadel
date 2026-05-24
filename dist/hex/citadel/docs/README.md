@@ -9,6 +9,7 @@ Start here:
 - [`workspace_topology.md`](./workspace_topology.md) for package boundaries and ownership
 - [`publication.md`](./publication.md) for the welded artifact boundary and release flow
 - [`shared_contract_dependency_strategy.md`](./shared_contract_dependency_strategy.md) for the canonical `:jido_integration_contracts` dependency posture
+- [`../core/context_authority_contract/README.md`](../core/context_authority_contract/README.md) for Context ABI authority grants and verdicts
 - `../surfaces/citadel_domain_surface/README.md` for the northbound typed
   surface package that now lives inside the Citadel workspace
 

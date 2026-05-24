@@ -14,6 +14,7 @@ defmodule Citadel.Build.DependencyResolver do
   @published_aitrace_requirement "~> 0.1.0"
   @published_execution_plane_requirement "~> 0.1.0"
   @published_ground_plane_persistence_policy_requirement "~> 0.1.0"
+  @published_outer_brain_context_abi_requirement "~> 0.1.0"
   @weld_git_sources %{
     execution_plane: [
       repo_root: Path.expand("../execution_plane", @repo_root),
@@ -30,6 +31,10 @@ defmodule Citadel.Build.DependencyResolver do
     jido_integration_provider_classification: [
       repo_root: Path.expand("../jido_integration", @repo_root),
       subdir: "core/provider_classification"
+    ],
+    outer_brain_context_abi: [
+      repo_root: Path.expand("../outer_brain", @repo_root),
+      subdir: "core/context_abi"
     ]
   }
 
@@ -81,12 +86,20 @@ defmodule Citadel.Build.DependencyResolver do
     @published_ground_plane_persistence_policy_requirement
   end
 
+  def published_outer_brain_context_abi_requirement do
+    @published_outer_brain_context_abi_requirement
+  end
+
   def execution_plane(opts \\ []) do
     external_dep(:execution_plane, opts)
   end
 
   def ground_plane_persistence_policy(opts \\ []) do
     external_dep(:ground_plane_persistence_policy, opts)
+  end
+
+  def outer_brain_context_abi(opts \\ []) do
+    external_dep(:outer_brain_context_abi, opts)
   end
 
   def execution_plane_weld_dependency do
@@ -101,8 +114,16 @@ defmodule Citadel.Build.DependencyResolver do
     weld_dependency(:ground_plane_persistence_policy)
   end
 
+  def outer_brain_context_abi_weld_dependency do
+    weld_dependency(:outer_brain_context_abi)
+  end
+
   def local_ground_plane_persistence_policy_weld_dependency? do
     local_dependency?(:ground_plane_persistence_policy)
+  end
+
+  def local_outer_brain_context_abi_weld_dependency? do
+    local_dependency?(:outer_brain_context_abi)
   end
 
   defp external_dep(app, opts) do

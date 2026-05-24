@@ -4,6 +4,7 @@ defmodule Citadel.Build.WorkspaceContract do
   @package_paths [
     "core/contract_core",
     "core/authority_contract",
+    "core/context_authority_contract",
     "core/observability_contract",
     "core/policy_packs",
     "core/citadel_governance",

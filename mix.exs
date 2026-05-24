@@ -162,6 +162,7 @@ defmodule Citadel.Workspace.MixProject do
       extras: [
         {"README.md", filename: "readme"},
         {"docs/README.md", filename: "docs-readme"},
+        "core/context_authority_contract/README.md",
         "docs/workspace_topology.md",
         "docs/publication.md",
         "docs/shared_contract_dependency_strategy.md",
@@ -171,7 +172,11 @@ defmodule Citadel.Workspace.MixProject do
       ],
       groups_for_extras: [
         Overview: ["README.md", "docs/README.md"],
-        Architecture: ["docs/workspace_topology.md", "docs/publication.md"],
+        Architecture: [
+          "core/context_authority_contract/README.md",
+          "docs/workspace_topology.md",
+          "docs/publication.md"
+        ],
         Contracts: ["docs/shared_contract_dependency_strategy.md"],
         Guides: ["guides/code_smell_remediation.md"],
         Project: ["CHANGELOG.md", "LICENSE"]

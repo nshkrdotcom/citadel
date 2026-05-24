@@ -31,6 +31,18 @@
       default_order: [:path, :github, :hex],
       publish_order: [:hex]
     },
+    outer_brain_context_abi: %{
+      path: "../outer_brain/core/context_abi",
+      github: %{
+        repo: "nshkrdotcom/outer_brain",
+        branch: "main",
+        subdir: "core/context_abi"
+      },
+      hex: "~> 0.1.0",
+      opts: [override: true],
+      default_order: [:path, :github, :hex],
+      publish_order: [:hex]
+    },
     jido_integration_contracts: %{
       path: "../jido_integration/core/contracts",
       github: %{

@@ -6,10 +6,11 @@ defmodule Citadel.WorkspaceTest do
   alias Weld
 
   test "tracks the packet workspace package contract on disk" do
-    assert Workspace.package_count() == 23
+    assert Workspace.package_count() == 24
     assert Workspace.package_count() == length(Workspace.package_paths())
     assert "apps/host_surface_harness" in Workspace.package_paths()
     assert "core/execution_governance_contract" in Workspace.package_paths()
+    assert "core/context_authority_contract" in Workspace.package_paths()
     refute "core/jido_integration_contracts" in Workspace.package_paths()
     assert "core/native_auth_assertion" in Workspace.package_paths()
     assert "core/provider_auth_fabric" in Workspace.package_paths()
@@ -108,6 +109,7 @@ defmodule Citadel.WorkspaceTest do
     assert Workspace.publication_root_projects() == [
              "core/citadel_kernel",
              "core/connector_binding",
+             "core/context_authority_contract",
              "core/provider_auth_fabric"
            ]
 
@@ -124,6 +126,10 @@ defmodule Citadel.WorkspaceTest do
 
     assert jido_provider_classification_dependency_declared?(
              publication_deps[:jido_integration_provider_classification]
+           )
+
+    assert outer_brain_context_abi_dependency_declared?(
+             publication_deps[:outer_brain_context_abi]
            )
 
     assert publication_deps[:aitrace][:opts] == []
@@ -145,6 +151,7 @@ defmodule Citadel.WorkspaceTest do
 
     assert "core/citadel_kernel" in result.artifact.selected_projects
     assert "core/connector_binding" in result.artifact.selected_projects
+    assert "core/context_authority_contract" in result.artifact.selected_projects
     assert "core/provider_auth_fabric" in result.artifact.selected_projects
     assert "core/native_auth_assertion" in result.artifact.selected_projects
     refute "core/jido_integration_contracts" in result.artifact.selected_projects
@@ -160,6 +167,7 @@ defmodule Citadel.WorkspaceTest do
     assert "execution_plane" in result.artifact.external_deps
     assert "jido_integration_contracts" in result.artifact.external_deps
     assert "jido_integration_provider_classification" in result.artifact.external_deps
+    assert "outer_brain_context_abi" in result.artifact.external_deps
   end
 
   test "weld manifest can be inspected through the mix task entrypoint" do
@@ -213,4 +221,19 @@ defmodule Citadel.WorkspaceTest do
   end
 
   defp jido_provider_classification_dependency_declared?(_other), do: false
+
+  defp outer_brain_context_abi_dependency_declared?(%{requirement: requirement, opts: []})
+       when is_binary(requirement),
+       do: true
+
+  defp outer_brain_context_abi_dependency_declared?(%{requirement: nil, opts: opts}) do
+    String.contains?(to_string(opts[:git]), "/outer_brain") and
+      opts[:subdir] == "core/context_abi"
+  end
+
+  defp outer_brain_context_abi_dependency_declared?(dependency) when is_list(dependency) do
+    outer_brain_context_abi_dependency_declared?(Map.new(dependency))
+  end
+
+  defp outer_brain_context_abi_dependency_declared?(_other), do: false
 end

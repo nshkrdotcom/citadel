@@ -11,6 +11,7 @@ defmodule Citadel.Workspace do
   @package_paths [
     "core/contract_core",
     "core/authority_contract",
+    "core/context_authority_contract",
     "core/observability_contract",
     "core/policy_packs",
     "core/citadel_governance",
@@ -78,11 +79,13 @@ defmodule Citadel.Workspace do
   @publication_root_projects [
     "core/citadel_kernel",
     "core/connector_binding",
+    "core/context_authority_contract",
     "core/provider_auth_fabric"
   ]
   @publication_output_docs [
     "README.md",
     "docs/README.md",
+    "core/context_authority_contract/README.md",
     "docs/shared_contract_dependency_strategy.md",
     "docs/workspace_topology.md",
     "docs/publication.md",
@@ -192,6 +195,7 @@ defmodule Citadel.Workspace do
       execution_plane: DependencyResolver.execution_plane_weld_dependency(),
       ground_plane_persistence_policy:
         DependencyResolver.ground_plane_persistence_policy_weld_dependency(),
+      outer_brain_context_abi: DependencyResolver.outer_brain_context_abi_weld_dependency(),
       jido_integration_contracts: DependencyResolver.jido_integration_contracts_weld_dependency(),
       jido_integration_provider_classification:
         DependencyResolver.jido_integration_provider_classification_weld_dependency()
@@ -242,10 +246,12 @@ defmodule Citadel.Workspace do
             artifact_tests: ["packaging/weld/citadel/test"],
             hex_build:
               not DependencyResolver.local_execution_plane_weld_dependency?() and
-                not DependencyResolver.local_ground_plane_persistence_policy_weld_dependency?(),
+                not DependencyResolver.local_ground_plane_persistence_policy_weld_dependency?() and
+                not DependencyResolver.local_outer_brain_context_abi_weld_dependency?(),
             hex_publish:
               not DependencyResolver.local_execution_plane_weld_dependency?() and
-                not DependencyResolver.local_ground_plane_persistence_policy_weld_dependency?()
+                not DependencyResolver.local_ground_plane_persistence_policy_weld_dependency?() and
+                not DependencyResolver.local_outer_brain_context_abi_weld_dependency?()
           ]
         ]
       ]

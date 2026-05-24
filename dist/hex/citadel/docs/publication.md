@@ -8,7 +8,8 @@ graph.
 - manifest: `packaging/weld/citadel.exs`
 - artifact id: `citadel`
 - mode: package projection
-- roots: `core/citadel_kernel`
+- roots: `core/citadel_kernel`, `core/connector_binding`,
+  `core/context_authority_contract`, and `core/provider_auth_fabric`
 - selected bridge closure: all `bridges/*`
 - excluded by default: `apps/*`, `core/conformance`,
   `surfaces/citadel_domain_surface`, and the root tooling project
@@ -58,7 +59,8 @@ by Jido Integration and declared as `:jido_integration_contracts`; the generated
 
 The welded artifact does not redefine the workspace architecture.
 
-- `core/*` packages except `core/conformance` remain the public core surface
+- `core/*` packages except `core/conformance` remain the public core surface;
+  Context ABI authority is owned by `core/context_authority_contract`
 - bridge packages remain bridge packages inside the projection
 - `apps/*` stay proof shells above the kernel and are not published by default
 - `surfaces/citadel_domain_surface` remains a direct package publication unit,

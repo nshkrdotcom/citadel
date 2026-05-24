@@ -6,6 +6,9 @@ Citadel is a non-umbrella Elixir monorepo with explicit package ownership.
 
 - `core/contract_core`: neutral identifiers, host-local refs, and RFC 8785 / JCS canonicalization helpers
 - `core/authority_contract`: Brain-authored `AuthorityDecision.v1` schema ownership
+- `core/context_authority_contract`: Context ABI authority grants, model-class
+  allowlist verdicts, route-policy authorization, payload-mode gates, and
+  promotion/rollback authority checks
 - `core/execution_governance_contract`: brain-authored `ExecutionGovernance.v1` packet ownership
 - `core/observability_contract`: trace and telemetry vocabulary ownership
 - `core/policy_packs`: policy pack definitions and normalization helpers
@@ -49,7 +52,8 @@ public artifact is now explicit:
 - repo-local Weld manifest: `packaging/weld/citadel.exs`
 - artifact id and package name: `citadel`
 - mode: package projection, not monolith
-- roots: `core/citadel_kernel`
+- roots: `core/citadel_kernel`, `core/connector_binding`,
+  `core/context_authority_contract`, and `core/provider_auth_fabric`
 - selected bridge closure: all `bridges/*`
 - excluded by default: `apps/*`, `core/conformance`,
   `surfaces/citadel_domain_surface`, and the root tooling project

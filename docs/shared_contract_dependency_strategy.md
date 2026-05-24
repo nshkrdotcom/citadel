@@ -5,6 +5,11 @@ in `../jido_integration/core/contracts`. Citadel consumes that package through
 `Citadel.Build.DependencyResolver`; it does not carry a local mirror of the
 `jido_integration_contracts` OTP app.
 
+OuterBrain owns the Context ABI in `../outer_brain/core/context_abi`. Citadel's
+`core/context_authority_contract` consumes that package through the same
+resolver so Context ABI packet structs and owner-local failure reason codes
+remain single-owner.
+
 ## Packages Using The Shared Contract Slice
 
 The public Citadel packages that rely on these shared modules resolve them
@@ -15,6 +20,8 @@ through the centralized dependency resolver:
 - `bridges/jido_integration_bridge`
 - `bridges/projection_bridge`
 - `core/conformance`
+- `core/context_authority_contract` consumes `:outer_brain_context_abi` for
+  Context ABI packets and `OuterBrain.ContextABI.Failure`
 
 ## Consumed Modules
 
