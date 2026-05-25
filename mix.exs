@@ -152,7 +152,7 @@ defmodule Citadel.Workspace.MixProject do
 
   defp docs do
     [
-      main: "readme",
+      main: "workspace_readme",
       name: "Citadel Workspace",
       logo: "assets/citadel.svg",
       assets: %{"assets" => "assets"},
@@ -160,12 +160,15 @@ defmodule Citadel.Workspace.MixProject do
       source_url: @source_url,
       homepage_url: @source_url,
       extras: [
-        {"README.md", filename: "readme"},
+        {"README.md", filename: "workspace_readme"},
         {"docs/README.md", filename: "docs-readme"},
         "core/context_authority_contract/README.md",
         "docs/workspace_topology.md",
         "docs/publication.md",
         "docs/shared_contract_dependency_strategy.md",
+        "guides/context_abi.md",
+        "guides/generalized_stack.md",
+        "guides/qc_and_operations.md",
         "guides/code_smell_remediation.md",
         "CHANGELOG.md",
         "LICENSE"
@@ -178,7 +181,12 @@ defmodule Citadel.Workspace.MixProject do
           "docs/publication.md"
         ],
         Contracts: ["docs/shared_contract_dependency_strategy.md"],
-        Guides: ["guides/code_smell_remediation.md"],
+        Guides: [
+          "guides/context_abi.md",
+          "guides/generalized_stack.md",
+          "guides/qc_and_operations.md",
+          "guides/code_smell_remediation.md"
+        ],
         Project: ["CHANGELOG.md", "LICENSE"]
       ]
     ]
