@@ -42,6 +42,7 @@ defmodule Citadel.ContextAuthority.PolicyAuthorizer do
          :ok <- ensure_trust_classes(request, opts),
          :ok <- ensure_redaction_class(request, opts),
          :ok <- ensure_operation(request, opts),
+         :ok <- ensure_operation_evidence(request),
          :ok <- ensure_fresh_policy(request, opts) do
       {:ok, build_grant(packet, request, model_classes, opts)}
     end
@@ -206,6 +207,34 @@ defmodule Citadel.ContextAuthority.PolicyAuthorizer do
       )
     end
   end
+
+  defp ensure_operation_evidence(%AuthorityRequest{operation: :promotion} = request) do
+    if Enum.any?(request.evidence_refs, &String.starts_with?(&1, "eval://")) do
+      :ok
+    else
+      failure(
+        :missing_evidence,
+        "promotion authority requires eval evidence refs",
+        request,
+        ["operation://promotion", "evidence://eval-required"]
+      )
+    end
+  end
+
+  defp ensure_operation_evidence(%AuthorityRequest{operation: :rollback} = request) do
+    if request.evidence_refs == [] do
+      failure(
+        :missing_evidence,
+        "rollback authority requires rollback evidence refs",
+        request,
+        ["operation://rollback", "evidence://rollback-required"]
+      )
+    else
+      :ok
+    end
+  end
+
+  defp ensure_operation_evidence(%AuthorityRequest{}), do: :ok
 
   defp ensure_fresh_policy(%AuthorityRequest{policy_expires_at: nil}, _opts), do: :ok
 

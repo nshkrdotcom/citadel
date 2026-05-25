@@ -104,6 +104,20 @@ defmodule Citadel.ContextAuthorityTest do
              )
   end
 
+  test "promotion and rollback operations require explicit evidence refs" do
+    assert {:error, %Failure{reason_code: "citadel.authority.missing_evidence.v1"}} =
+             ContextAuthority.authorize(packet(), %{request() | operation: :promotion})
+
+    assert {:ok, %Grant{operation: :promotion} = grant} =
+             ContextAuthority.authorize(packet(), %{
+               request()
+               | operation: :promotion,
+                 evidence_refs: ["eval://memory/a", "memory-candidate://tenant-a/a"]
+             })
+
+    assert "eval://memory/a" in grant.evidence_refs
+  end
+
   defp request do
     AuthorityRequest.new!(%{
       tenant_ref: "tenant://acme",
