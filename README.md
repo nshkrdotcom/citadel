@@ -69,6 +69,13 @@ Citadel `ExecutionPlane.Authority.Verifier` implementation to validate Citadel
 authority refs, but Citadel still does not become the lane host or lower
 execution node.
 
+The NSHKR cleanup pass tightened Context ABI authority evidence. The
+context-authority authorizer can now receive an explicit evidence resolver and
+fails closed when an authority ref cannot be resolved or when resolved evidence
+does not match the request tenant. Ref-only fixture posture remains available
+when no resolver is supplied, but release proofs should supply resolvable
+evidence before treating authority refs as verified.
+
 The repo also carries the host-ingress bridge used by host applications that
 need structured ingress into the kernel. That bridge accepts typed request
 context, compiles invocation intent, and returns accepted-result contracts

@@ -18,6 +18,12 @@ OuterBrain receives authority evidence as refs and policy facts, not product
 session state or raw prompts. Jido Integration receives only invocation refs and
 credential/authority posture from Mezzanine.
 
+When a caller supplies an evidence resolver, Citadel verifies that the
+authority ref resolves and that the resolved evidence tenant matches the
+request tenant. Unresolved or cross-tenant evidence fails closed with a bounded
+authority failure reason. Tests may still use the ref-only fixture posture when
+no resolver is supplied.
+
 Citadel must remain a pure authority owner. StackLab proves the full path, but
 Citadel package tests must prove grant validation, expiry, redaction bounds, and
 fail-closed behavior.

@@ -15,6 +15,8 @@ then root `mix ci` before commit.
 Citadel changes must keep these obligations green:
 
 - authority and execution-governance contract tests;
+- Context ABI authority resolver fixtures for unresolved evidence,
+  cross-tenant evidence, and verified authority refs;
 - policy pack downgrade-rejection tests;
 - host-ingress and substrate-ingress bridge tests;
 - StackLab governance, tenant, connector, and proof-matrix checks where the
