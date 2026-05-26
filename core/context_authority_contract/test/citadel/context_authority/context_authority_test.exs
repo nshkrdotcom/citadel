@@ -118,6 +118,23 @@ defmodule Citadel.ContextAuthorityTest do
     assert "eval://memory/a" in grant.evidence_refs
   end
 
+  test "promotion evidence resolver can fail closed on forged eval refs" do
+    forged =
+      %{request() | operation: :promotion, evidence_refs: ["eval://memory/forged"]}
+
+    assert {:error, %Failure{reason_code: "citadel.authority.evidence_unverified.v1"}} =
+             ContextAuthority.authorize(packet(), forged,
+               evidence_resolver: fn _ref, _request -> {:error, :not_found} end
+             )
+
+    assert {:ok, %Grant{operation: :promotion}} =
+             ContextAuthority.authorize(packet(), forged,
+               evidence_resolver: fn "eval://memory/forged", _request ->
+                 {:ok, %{tenant_ref: "tenant://acme", verdict: :pass}}
+               end
+             )
+  end
+
   defp request do
     AuthorityRequest.new!(%{
       tenant_ref: "tenant://acme",
