@@ -426,3 +426,44 @@ Operational rules:
 - Evidence is emitted through authority contract tests, policy pack tests,
   conformance receipts, host-ingress harnesses, StackLab governance proofs, and
   AITrace observability refs.
+
+## Chassis Deployment Authority
+
+Citadel is the authority source for Chassis deployment, rollback,
+host-register, host-drain, provision, and secret-rotation mutations. Existing
+`boundary_class: "chassis.*"` intents are compiled through
+`Citadel.ExecutionGovernanceCompiler.compile!/4` and must fail closed when the
+caller lacks tenant, residency, budget, or mutation authority. Chassis carries
+the resulting `authority_ref`; it does not invent policy semantics.
+
+## Chassis Evolution Authority Intents
+
+Chassis Evolution, host-daemon swap, model materialization, tensor reload, and
+hardware admission add these Citadel authority intents:
+
+- `authority:chassis:evolution:create_batch`
+- `authority:chassis:evolution:start`
+- `authority:chassis:evolution:run_coding_agent`
+- `authority:chassis:evolution:provision_trial`
+- `authority:chassis:evolution:score_candidate`
+- `authority:chassis:evolution:request_promotion`
+- `authority:chassis:evolution:promote_candidate`
+- `authority:chassis:evolution:rollback_candidate`
+- `authority:chassis:host_daemon:swap`
+- `authority:chassis:host_daemon:rollback`
+- `authority:chassis:model:materialize_weight`
+- `authority:chassis:model:reload_tensor_patch`
+- `authority:chassis:hardware:admit_accelerator`
+
+The intent catalogue is documented in
+`../j/jido_brainstorm/nshkrdotcom/docs/20260529/chassis_impl/0531_chassis_evolution_citadel_consent_and_authority.md`.
+
+## Promotion Consent Binding
+
+`authority:chassis:evolution:promote_candidate` binds the full promotion
+precondition set: candidate, failure batch, patch digest, base release,
+artifact digest, score matrix, target installation, approved state volume
+mounts, rollback ref, trace id, tenant, installation, and
+`operator_consent_ref`. The `operator_consent_ref` is distinct from
+`authority_ref`; both must be present and valid before Chassis may swap a
+candidate into service.
