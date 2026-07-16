@@ -1,16 +1,20 @@
 # Citadel Governance
 
-Status: Wave 2 seam freeze.
+Status: durable authority owner.
 
 ## Owns
 
 - pure values, compilers, reducers, and projectors
+- the Postgres authority ledger for decision sessions, decisions, scoped
+  grants, expiry/revocation truth, and policy continuity
 - scope, service-admission, session-binding, and boundary-intent logic
 - deterministic wrappers that must remain runtime-owner-free
 - `Citadel.DecisionHash`
 - the Citadel-owned `InvocationRequest`, `BoundaryIntent`, and `TopologyIntent` seam
 - `Citadel.Governance.SubstrateIngress`, the pure substrate-origin compiler
   consumed by Mezzanine without host session continuity
+- `Citadel.Governance.DurableAuthority`, the only durable ingress for authority
+  facts consumed by governed provider and tool effects
 
 ## Dependencies
 
@@ -20,7 +24,7 @@ Status: Wave 2 seam freeze.
 - `core/observability_contract`
 - `core/policy_packs`
 
-## Wave 2 Posture
+## Authority posture
 
 Wave 2 freezes the public carrier shapes before deeper runtime behavior:
 
@@ -43,8 +47,13 @@ Wave 2 freezes the public carrier shapes before deeper runtime behavior:
 - governance compilation rejects lower posture downgrades before outbox
   publication; lower packages receive the exact policy projection rather than
   recomputing product-local safety settings
-- Waves 3 and 4 may tighten ingress mappings, but incompatible carrier-shape
-  changes now require an explicit `schema_version` step
+- decisions and grants commit atomically in the Citadel Postgres database
+- grant reconstruction verifies the frozen contract and persisted digests;
+  malformed or partial state fails closed
+- verification serializes against revocation, and closing a decision session
+  revokes all of its active grants
+- memory, no-op, fixture, and caller-supplied authority stores are not production
+  selections
 
 ## Hardening
 

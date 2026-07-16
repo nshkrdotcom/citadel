@@ -13,13 +13,14 @@ defmodule Citadel.Governance.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       aliases: aliases(),
-      description: "Stateless governance values and deterministic policy compilation for Citadel"
+      description:
+        "Governance values, policy compilation, and durable authority truth for Citadel"
     ]
   end
 
   def application do
     [
-      extra_applications: [:crypto, :logger]
+      extra_applications: [:crypto, :ecto_sql, :logger]
     ]
   end
 
@@ -35,6 +36,8 @@ defmodule Citadel.Governance.MixProject do
       {:citadel_observability_contract, path: "../observability_contract"},
       {:citadel_policy_packs, path: "../policy_packs"},
       Citadel.Build.DependencyResolver.jido_integration_contracts(),
+      {:ecto_sql, "~> 3.14"},
+      {:postgrex, "~> 0.22"},
       {:stream_data, "~> 1.1", only: :test},
       {:muex, "~> 0.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
