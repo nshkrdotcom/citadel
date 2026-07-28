@@ -40,8 +40,8 @@ defmodule Citadel.Governance.ModelAuthorityTest do
     assert %ModelGrant{
              input_digest: ^input_digest,
              policy_ref: "policy-artifact://citadel/synapse/gemini-turn/v1",
-             provider_family: "google_gemini",
-             account_ref: "provider-account://tenant-acme/google-gemini/primary",
+             provider_family: "gemini",
+             account_ref: "provider-account://tenant-acme/gemini/primary",
              model_ref: "gemini-2.5-flash",
              operation_class: "generate_content",
              context_digest: @context_digest,
@@ -209,8 +209,8 @@ defmodule Citadel.Governance.ModelAuthorityTest do
       tenant_ref: "tenant://acme",
       actor_ref: "actor://synapse/operator",
       subject_ref: "subject://synapse/run-1/turn-1",
-      provider_family: "google_gemini",
-      account_ref: "provider-account://tenant-acme/google-gemini/primary",
+      provider_family: "gemini",
+      account_ref: "provider-account://tenant-acme/gemini/primary",
       model_ref: "gemini-2.5-flash",
       operation_ref: "operation://gemini/generate/run-1/turn-1",
       operation_class: "generate_content",
@@ -218,7 +218,7 @@ defmodule Citadel.Governance.ModelAuthorityTest do
       context_digest: @context_digest,
       attempt_ref: "attempt://jido/run-1/turn-1/1",
       effect_ref: "effect://mezzanine/run-1/turn-1/model",
-      fence_token: "fence://google-gemini/primary/generation-7",
+      fence_token: "fence://gemini/primary/generation-7",
       issued_at: @issued_at,
       expires_at: @expires_at
     }

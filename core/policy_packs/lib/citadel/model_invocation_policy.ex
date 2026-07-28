@@ -69,7 +69,7 @@ defmodule Citadel.PolicyPacks.ModelInvocationPolicy do
       activation_ref: "policy-activation://nshkr/synapse/gemini-turn/v1",
       policy_version: 1,
       compiler_ref: @compiler_ref,
-      provider_family: "google_gemini",
+      provider_family: "gemini",
       allowed_models: ["gemini-2.5-flash"],
       allowed_operations: ["generate_content", "stream_generate_content"],
       max_grant_ttl_seconds: 120

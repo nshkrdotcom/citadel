@@ -13,7 +13,7 @@ defmodule Citadel.PolicyPacks.ModelInvocationPolicyTest do
 
     assert :permitted =
              ModelInvocationPolicy.evaluate(policy, %{
-               provider_family: "google_gemini",
+               provider_family: "gemini",
                model_ref: "gemini-2.5-flash",
                operation_class: "generate_content",
                issued_at: @issued_at,
@@ -27,7 +27,7 @@ defmodule Citadel.PolicyPacks.ModelInvocationPolicyTest do
           {:expires_at, DateTime.add(@issued_at, 121, :second), :grant_ttl_not_allowed}
         ] do
       input = %{
-        provider_family: "google_gemini",
+        provider_family: "gemini",
         model_ref: "gemini-2.5-flash",
         operation_class: "generate_content",
         issued_at: @issued_at,
