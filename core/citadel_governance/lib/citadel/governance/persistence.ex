@@ -11,11 +11,18 @@ defmodule Citadel.Governance.Persistence do
   alias Citadel.Governance.Repo
 
   @profiles [:integration_postgres, :ops_durable]
-  @migration_version 20_260_715_000_001
-  @tables ~w(citadel_decision_sessions citadel_authority_decisions citadel_scoped_grants citadel_grant_revocations)
+  @migration_version 20_260_728_000_000
+  @tables ~w(
+    citadel_decision_sessions
+    citadel_authority_decisions
+    citadel_scoped_grants
+    citadel_grant_revocations
+    citadel_grant_control_receipts
+  )
   @triggers MapSet.new([
               {"citadel_authority_decisions", "citadel_authority_decisions_immutable"},
               {"citadel_decision_sessions", "citadel_decision_sessions_restrict_mutation"},
+              {"citadel_grant_control_receipts", "citadel_grant_control_receipts_immutable"},
               {"citadel_grant_revocations", "citadel_grant_revocations_immutable"},
               {"citadel_scoped_grants", "citadel_scoped_grants_restrict_update"}
             ])

@@ -10,12 +10,18 @@ defmodule Citadel.Governance.DurableAuthority do
 
   import Ecto.Query
 
+  alias Citadel.ContractCore.CanonicalJson
   alias Citadel.Governance.DurableSchemas.AuthorityDecision
   alias Citadel.Governance.DurableSchemas.DecisionSession
+
+  alias Citadel.Governance.DurableSchemas.GrantControlDecisionReceipt,
+    as: GrantControlDecisionReceiptRecord
+
   alias Citadel.Governance.DurableSchemas.GrantRevocation
   alias Citadel.Governance.DurableSchemas.ScopedGrantRecord
   alias Citadel.Governance.Repo
   alias Citadel.Governance.SafePayload
+  alias Citadel.GrantControlDecisionReceipt
   alias Citadel.GrantVerificationError
   alias Citadel.ScopedGrant
 
@@ -28,6 +34,16 @@ defmodule Citadel.Governance.DurableAuthority do
     :result,
     :decision_payload,
     :decided_at
+  ]
+  @grant_control_fields [:receipt_ref, :attempt_ref, :boundary_ref, :deadline_at]
+  @grant_scope_fields [
+    :tenant_ref,
+    :actor_ref,
+    :subject_ref,
+    :effect_ref,
+    :operation_ref,
+    :capability_id,
+    :scope
   ]
 
   @spec open_session(map() | keyword()) :: {:ok, DecisionSession.t()} | {:error, term()}
@@ -142,6 +158,82 @@ defmodule Citadel.Governance.DurableAuthority do
       end
     end)
   end
+
+  @doc """
+  Makes and durably records one current-authority decision at an effect checkpoint.
+
+  Database time is the sole observation clock. Receipt identity and
+  `{grant_ref, attempt_ref, boundary_ref}` are single use so readback after a
+  restart cannot be mistaken for fresh authority. Call `fetch_grant_control_receipt/1`
+  only for historical readback.
+  """
+  @spec decide_grant(
+          String.t(),
+          map() | keyword(),
+          map() | keyword()
+        ) :: {:ok, GrantControlDecisionReceipt.t()} | {:error, term()}
+  def decide_grant(grant_ref, expected, attrs) when is_binary(grant_ref) do
+    with {:ok, expected} <- normalize_grant_scope(expected),
+         {:ok, control} <- normalize_grant_control(attrs),
+         {:ok, request_hash} <- grant_control_request_hash(grant_ref, expected, control) do
+      with_store(fn ->
+        transaction(fn ->
+          reject_decided_receipt!(grant_ref, control)
+
+          {record, decision, revocation} = load_grant_for_update!(grant_ref)
+
+          session =
+            Repo.get(DecisionSession, decision.session_ref) ||
+              Repo.rollback(:authority_ledger_corrupt)
+
+          observed_at = database_now!()
+          grant = reconstruct_grant!(record, decision, revocation)
+
+          {result, reason} =
+            grant_control_result(grant, session, expected, observed_at, control.deadline_at)
+
+          persist_grant_control_receipt!(
+            record,
+            decision,
+            session,
+            grant,
+            revocation,
+            control,
+            request_hash,
+            observed_at,
+            result,
+            reason
+          )
+        end)
+      end)
+    end
+  end
+
+  def decide_grant(_grant_ref, _expected, _attrs),
+    do: {:error, :invalid_grant_control_decision}
+
+  @doc """
+  Reads an immutable historical decision receipt.
+
+  Readback never grants current authority and is deliberately separate from
+  `decide_grant/3`.
+  """
+  @spec fetch_grant_control_receipt(String.t()) ::
+          {:ok, GrantControlDecisionReceipt.t()} | {:error, term()}
+  def fetch_grant_control_receipt(receipt_ref) when is_binary(receipt_ref) do
+    with_store(fn ->
+      case Repo.get(GrantControlDecisionReceiptRecord, receipt_ref) do
+        %GrantControlDecisionReceiptRecord{} = record ->
+          reconstruct_grant_control_receipt(record)
+
+        nil ->
+          {:error, :grant_control_receipt_not_found}
+      end
+    end)
+  end
+
+  def fetch_grant_control_receipt(_receipt_ref),
+    do: {:error, :invalid_grant_control_receipt_ref}
 
   @spec revoke_grant(String.t(), map() | keyword()) :: {:ok, ScopedGrant.t()} | {:error, term()}
   def revoke_grant(grant_ref, attrs) when is_binary(grant_ref) do
@@ -260,6 +352,276 @@ defmodule Citadel.Governance.DurableAuthority do
     else
       _other -> {:error, :invalid_session_close}
     end
+  end
+
+  defp normalize_grant_scope(attrs) when is_list(attrs) do
+    if Keyword.keyword?(attrs),
+      do: attrs |> Map.new() |> normalize_grant_scope(),
+      else: {:error, :invalid_grant_control_scope}
+  end
+
+  defp normalize_grant_scope(attrs) when is_map(attrs) do
+    attrs = atomize_known(attrs, @grant_scope_fields)
+
+    with :ok <- exact_keys(attrs, @grant_scope_fields),
+         :ok <-
+           present_refs(attrs, [
+             :tenant_ref,
+             :actor_ref,
+             :subject_ref,
+             :effect_ref,
+             :operation_ref,
+             :capability_id
+           ]),
+         true <- is_map(attrs.scope),
+         {:ok, safe} <- SafePayload.normalize(attrs) do
+      {:ok, safe}
+    else
+      _other -> {:error, :invalid_grant_control_scope}
+    end
+  end
+
+  defp normalize_grant_scope(_attrs), do: {:error, :invalid_grant_control_scope}
+
+  defp normalize_grant_control(attrs) when is_list(attrs) do
+    if Keyword.keyword?(attrs),
+      do: attrs |> Map.new() |> normalize_grant_control(),
+      else: {:error, :invalid_grant_control_decision}
+  end
+
+  defp normalize_grant_control(attrs) when is_map(attrs) do
+    attrs = atomize_known(attrs, @grant_control_fields)
+
+    with :ok <- exact_keys(attrs, @grant_control_fields),
+         :ok <- present_refs(attrs, [:receipt_ref, :attempt_ref, :boundary_ref]),
+         true <- is_struct(attrs.deadline_at, DateTime) do
+      {:ok, Map.update!(attrs, :deadline_at, &DateTime.truncate(&1, :microsecond))}
+    else
+      _other -> {:error, :invalid_grant_control_decision}
+    end
+  end
+
+  defp normalize_grant_control(_attrs), do: {:error, :invalid_grant_control_decision}
+
+  defp grant_control_request_hash(grant_ref, expected, control) do
+    canonical =
+      CanonicalJson.encode_inline!(
+        %{
+          "contract_version" => 1,
+          "grant_ref" => grant_ref,
+          "expected_scope" => expected,
+          "attempt_ref" => control.attempt_ref,
+          "boundary_ref" => control.boundary_ref,
+          "deadline_at" => DateTime.to_iso8601(control.deadline_at)
+        },
+        max_bytes: 65_536,
+        label: "Citadel durable grant control decision request"
+      )
+
+    {:ok, "sha256:" <> (:crypto.hash(:sha256, canonical) |> Base.encode16(case: :lower))}
+  rescue
+    _error -> {:error, :invalid_grant_control_decision}
+  end
+
+  defp reject_decided_receipt!(grant_ref, control) do
+    if Repo.get(GrantControlDecisionReceiptRecord, control.receipt_ref) do
+      Repo.rollback(:grant_control_receipt_already_decided)
+    end
+
+    checkpoint =
+      Repo.one(
+        from(r in GrantControlDecisionReceiptRecord,
+          where:
+            r.grant_ref == ^grant_ref and r.attempt_ref == ^control.attempt_ref and
+              r.boundary_ref == ^control.boundary_ref,
+          select: r.receipt_ref
+        )
+      )
+
+    if checkpoint, do: Repo.rollback(:grant_control_checkpoint_already_decided)
+  end
+
+  defp database_now! do
+    case Ecto.Adapters.SQL.query(Repo, "SELECT clock_timestamp()", []) do
+      {:ok, %{rows: [[%DateTime{} = now]]}} -> DateTime.truncate(now, :microsecond)
+      _other -> Repo.rollback(:authority_store_unavailable)
+    end
+  end
+
+  defp grant_control_result(grant, session, expected, observed_at, deadline_at) do
+    cond do
+      session.status != "open" ->
+        {"denied", "authority_session_closed"}
+
+      grant.status == "revoked" ->
+        {"denied", "grant_revoked"}
+
+      DateTime.compare(grant.expires_at, observed_at) != :gt ->
+        {"denied", "grant_expired"}
+
+      not exact_grant_scope?(grant, expected, observed_at) ->
+        {"denied", "exact_scope_mismatch"}
+
+      DateTime.compare(deadline_at, observed_at) != :gt ->
+        {"denied", "deadline_elapsed"}
+
+      DateTime.compare(deadline_at, grant.expires_at) == :gt ->
+        {"denied", "deadline_exceeds_grant"}
+
+      true ->
+        {"permitted", "exact_authority_verified"}
+    end
+  end
+
+  defp exact_grant_scope?(grant, expected, observed_at) do
+    ScopedGrant.verify(grant, expected, observed_at) == :ok
+  end
+
+  defp persist_grant_control_receipt!(
+         record,
+         decision,
+         session,
+         grant,
+         revocation,
+         control,
+         request_hash,
+         observed_at,
+         result,
+         reason
+       ) do
+    attrs = %{
+      receipt_ref: control.receipt_ref,
+      grant_ref: grant.grant_ref,
+      authority_decision_ref: decision.decision_ref,
+      effect_ref: grant.effect_ref,
+      operation_ref: grant.operation_ref,
+      attempt_ref: control.attempt_ref,
+      boundary_ref: control.boundary_ref,
+      request_hash: request_hash,
+      grant_digest: ScopedGrant.digest(grant),
+      policy_epoch: decision.policy_version,
+      grant_revision: record.revision,
+      session_revision: session.lifecycle_revision,
+      result: result,
+      reason: reason,
+      observed_at: observed_at,
+      grant_expires_at: grant.expires_at,
+      deadline_at: control.deadline_at,
+      revocation_ref: revocation_ref(revocation)
+    }
+
+    with {:ok, receipt} <- GrantControlDecisionReceipt.new(attrs) do
+      case Repo.insert(GrantControlDecisionReceiptRecord.changeset(Map.from_struct(receipt))) do
+        {:ok, stored} ->
+          grant_control_receipt!(stored)
+
+        {:error, changeset} ->
+          if unique_conflict?(changeset),
+            do: Repo.rollback(:grant_control_checkpoint_already_decided),
+            else: Repo.rollback(:invalid_grant_control_decision_receipt)
+      end
+    else
+      {:error, _reason} -> Repo.rollback(:invalid_grant_control_decision_receipt)
+    end
+  end
+
+  defp reconstruct_grant_control_receipt(record) do
+    grant_record = Repo.get(ScopedGrantRecord, record.grant_ref)
+    revocation = receipt_revocation(record)
+
+    decision =
+      if grant_record,
+        do: Repo.get(AuthorityDecision, grant_record.decision_ref),
+        else: nil
+
+    session =
+      if decision,
+        do: Repo.get(DecisionSession, decision.session_ref),
+        else: nil
+
+    with %ScopedGrantRecord{} <- grant_record,
+         %AuthorityDecision{} <- decision,
+         %DecisionSession{} <- session,
+         true <- record.authority_decision_ref == decision.decision_ref,
+         true <- record.effect_ref == grant_record.grant_payload["effect_ref"],
+         true <- record.operation_ref == grant_record.grant_payload["operation_ref"],
+         true <- record.policy_epoch == decision.policy_version,
+         true <- record.session_revision <= session.lifecycle_revision,
+         true <- receipt_grant_digest(grant_record, record.grant_revision) == record.grant_digest,
+         :ok <- validate_receipt_revocation(record, revocation),
+         {:ok, receipt} <- GrantControlDecisionReceipt.new(receipt_attrs(record)) do
+      {:ok, receipt}
+    else
+      _other -> {:error, :invalid_reconstructed_grant_control_receipt}
+    end
+  end
+
+  defp grant_control_receipt!(record) do
+    case GrantControlDecisionReceipt.new(receipt_attrs(record)) do
+      {:ok, receipt} -> receipt
+      {:error, _reason} -> Repo.rollback(:invalid_grant_control_decision_receipt)
+    end
+  end
+
+  defp receipt_attrs(record) do
+    record
+    |> Map.from_struct()
+    |> Map.take([
+      :receipt_ref,
+      :grant_ref,
+      :authority_decision_ref,
+      :effect_ref,
+      :operation_ref,
+      :attempt_ref,
+      :boundary_ref,
+      :request_hash,
+      :grant_digest,
+      :policy_epoch,
+      :grant_revision,
+      :session_revision,
+      :result,
+      :reason,
+      :observed_at,
+      :grant_expires_at,
+      :deadline_at,
+      :revocation_ref
+    ])
+  end
+
+  defp receipt_grant_digest(record, 1), do: record.issued_digest
+
+  defp receipt_grant_digest(record, revision) when revision == record.revision,
+    do: record.current_digest
+
+  defp receipt_grant_digest(_record, _revision), do: nil
+
+  defp receipt_revocation(%{revocation_ref: ref}) when is_binary(ref),
+    do: Repo.get(GrantRevocation, ref)
+
+  defp receipt_revocation(%{revocation_ref: nil}), do: nil
+
+  defp validate_receipt_revocation(%{revocation_ref: nil}, nil), do: :ok
+
+  defp validate_receipt_revocation(
+         %{grant_ref: grant_ref, revocation_ref: revocation_ref},
+         %GrantRevocation{} = revocation
+       ) do
+    if revocation.grant_ref == grant_ref and revocation.revocation_ref == revocation_ref,
+      do: :ok,
+      else: {:error, :invalid_grant_control_receipt_revocation}
+  end
+
+  defp validate_receipt_revocation(_record, _revocation),
+    do: {:error, :invalid_grant_control_receipt_revocation}
+
+  defp revocation_ref(%GrantRevocation{revocation_ref: ref}), do: ref
+  defp revocation_ref(nil), do: nil
+  defp revocation_ref(_invalid), do: nil
+
+  defp unique_conflict?(changeset) do
+    Enum.any?(changeset.errors, fn {_field, {_message, opts}} ->
+      Keyword.get(opts, :constraint) == :unique
+    end)
   end
 
   defp validate_issue(decision, grant) do

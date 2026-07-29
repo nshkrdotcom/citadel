@@ -10,6 +10,7 @@ defmodule Citadel.Governance.ToolEffectAuthority do
 
   alias Citadel.ContractCore.CanonicalJson
   alias Citadel.Governance.DurableAuthority
+  alias Citadel.GrantControlDecisionReceipt
   alias Citadel.GrantVerificationError
   alias Citadel.PolicyPacks.ToolEffectPolicy
   alias Citadel.ScopedGrant
@@ -155,6 +156,54 @@ defmodule Citadel.Governance.ToolEffectAuthority do
 
   def verify_grant(grant_ref, _expected, _now) when is_binary(grant_ref),
     do: verification_error(grant_ref, :invalid, :invalid_tool_effect_grant_verification)
+
+  @doc """
+  Records one durable, database-time authority/deadline decision for this exact
+  reviewed tool-effect binding.
+
+  This is the effect-checkpoint admission surface. Historical receipt readback
+  does not authorize another dispatch.
+  """
+  @spec decide_grant(String.t(), map() | keyword(), map() | keyword()) ::
+          {:ok, GrantControlDecisionReceipt.t()} | {:error, term()}
+  def decide_grant(grant_ref, expected, control_attrs) when is_binary(grant_ref) do
+    with {:ok, expected} <- normalize_binding(expected),
+         {:ok, checkpoint_attempt_ref} <- control_attempt_ref(control_attrs),
+         true <- checkpoint_attempt_ref == expected.attempt_ref,
+         {:ok, grant} <- DurableAuthority.fetch_grant(grant_ref),
+         :ok <- validate_tool_grant(grant) do
+      case DurableAuthority.decide_grant(grant_ref, scoped_expected(expected), control_attrs) do
+        {:ok, %GrantControlDecisionReceipt{result: "permitted"} = receipt} ->
+          {:ok, receipt}
+
+        {:ok, %GrantControlDecisionReceipt{result: "denied"} = receipt} ->
+          {:error, {:grant_control_denied, receipt}}
+
+        {:error, _reason} = error ->
+          error
+      end
+    else
+      false ->
+        {:error, :tool_effect_checkpoint_attempt_mismatch}
+
+      {:error, :invalid_tool_effect_grant} ->
+        verification_error(grant_ref, :invalid, :invalid_reconstructed_tool_effect_grant)
+
+      {:error, _reason} = error ->
+        error
+    end
+  end
+
+  def decide_grant(_grant_ref, _expected, _control_attrs),
+    do: {:error, :invalid_tool_effect_grant_control_decision}
+
+  @spec fetch_grant_control_receipt(String.t()) ::
+          {:ok, GrantControlDecisionReceipt.t()} | {:error, term()}
+  def fetch_grant_control_receipt(receipt_ref) when is_binary(receipt_ref),
+    do: DurableAuthority.fetch_grant_control_receipt(receipt_ref)
+
+  def fetch_grant_control_receipt(_receipt_ref),
+    do: {:error, :invalid_grant_control_receipt_ref}
 
   @spec revoke_grant(String.t(), map() | keyword()) ::
           {:ok, ScopedGrant.t()} | {:error, term()}
@@ -463,6 +512,28 @@ defmodule Citadel.Governance.ToolEffectAuthority do
       }
     }
   end
+
+  defp control_attempt_ref(attrs) when is_list(attrs) do
+    if Keyword.keyword?(attrs),
+      do: attrs |> Map.new() |> control_attempt_ref(),
+      else: {:error, :invalid_tool_effect_grant_control_decision}
+  end
+
+  defp control_attempt_ref(attrs) when is_map(attrs) do
+    case {Map.fetch(attrs, :attempt_ref), Map.fetch(attrs, "attempt_ref")} do
+      {{:ok, attempt_ref}, :error} when is_binary(attempt_ref) and attempt_ref != "" ->
+        {:ok, attempt_ref}
+
+      {:error, {:ok, attempt_ref}} when is_binary(attempt_ref) and attempt_ref != "" ->
+        {:ok, attempt_ref}
+
+      _other ->
+        {:error, :invalid_tool_effect_grant_control_decision}
+    end
+  end
+
+  defp control_attempt_ref(_attrs),
+    do: {:error, :invalid_tool_effect_grant_control_decision}
 
   defp atomize_exact(attrs, fields) do
     attrs = Map.new(attrs)

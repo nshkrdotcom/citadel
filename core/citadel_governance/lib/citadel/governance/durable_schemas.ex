@@ -203,3 +203,87 @@ defmodule Citadel.Governance.DurableSchemas.GrantRevocation do
     |> foreign_key_constraint(:grant_ref)
   end
 end
+
+defmodule Citadel.Governance.DurableSchemas.GrantControlDecisionReceipt do
+  @moduledoc false
+
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  @primary_key {:receipt_ref, :string, autogenerate: false}
+  @timestamps_opts [type: :utc_datetime_usec, updated_at: false]
+  @type t :: %__MODULE__{}
+
+  schema "citadel_grant_control_receipts" do
+    field(:grant_ref, :string)
+    field(:authority_decision_ref, :string)
+    field(:effect_ref, :string)
+    field(:operation_ref, :string)
+    field(:attempt_ref, :string)
+    field(:boundary_ref, :string)
+    field(:request_hash, :string)
+    field(:grant_digest, :string)
+    field(:policy_epoch, :integer)
+    field(:grant_revision, :integer)
+    field(:session_revision, :integer)
+    field(:result, :string)
+    field(:reason, :string)
+    field(:observed_at, :utc_datetime_usec)
+    field(:grant_expires_at, :utc_datetime_usec)
+    field(:deadline_at, :utc_datetime_usec)
+    field(:revocation_ref, :string)
+    timestamps()
+  end
+
+  def changeset(attrs) do
+    %__MODULE__{}
+    |> cast(attrs, [
+      :receipt_ref,
+      :grant_ref,
+      :authority_decision_ref,
+      :effect_ref,
+      :operation_ref,
+      :attempt_ref,
+      :boundary_ref,
+      :request_hash,
+      :grant_digest,
+      :policy_epoch,
+      :grant_revision,
+      :session_revision,
+      :result,
+      :reason,
+      :observed_at,
+      :grant_expires_at,
+      :deadline_at,
+      :revocation_ref
+    ])
+    |> validate_required([
+      :receipt_ref,
+      :grant_ref,
+      :authority_decision_ref,
+      :effect_ref,
+      :operation_ref,
+      :attempt_ref,
+      :boundary_ref,
+      :request_hash,
+      :grant_digest,
+      :policy_epoch,
+      :grant_revision,
+      :session_revision,
+      :result,
+      :reason,
+      :observed_at,
+      :grant_expires_at,
+      :deadline_at
+    ])
+    |> validate_inclusion(:result, ~w(permitted denied))
+    |> validate_number(:policy_epoch, greater_than: 0)
+    |> validate_number(:grant_revision, greater_than: 0)
+    |> validate_number(:session_revision, greater_than: 0)
+    |> unique_constraint(:receipt_ref, name: :citadel_grant_control_receipts_pkey)
+    |> unique_constraint([:grant_ref, :attempt_ref, :boundary_ref],
+      name: :citadel_grant_control_receipts_checkpoint_index
+    )
+    |> foreign_key_constraint(:grant_ref)
+  end
+end
