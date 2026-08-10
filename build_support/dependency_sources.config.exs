@@ -8,6 +8,11 @@
       default_order: [:path, :github, :hex],
       publish_order: [:hex]
     },
+    blitz: %{
+      hex: "~> 0.3.0",
+      default_order: [:hex],
+      publish_order: [:hex]
+    },
     execution_plane: %{
       path: "../execution_plane/core/execution_plane",
       github: %{
@@ -15,7 +20,7 @@
         branch: "main",
         subdir: "core/execution_plane"
       },
-      hex: "~> 0.1.0",
+      hex: "~> 0.2.0",
       default_order: [:path, :github, :hex],
       publish_order: [:hex]
     },
@@ -65,6 +70,11 @@
       hex: "~> 0.1.0",
       opts: [override: true],
       default_order: [:path, :github, :hex],
+      publish_order: [:hex]
+    },
+    weld: %{
+      hex: "~> 0.8.2",
+      default_order: [:hex],
       publish_order: [:hex]
     }
   }
