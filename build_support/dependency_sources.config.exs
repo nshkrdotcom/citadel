@@ -3,7 +3,7 @@
     aitrace: %{
       path: "../AITrace",
       github: %{repo: "nshkrdotcom/AITrace", branch: "main"},
-      hex: "~> 0.1.0",
+      hex: "~> 0.2.0",
       opts: [override: true],
       default_order: [:path, :github, :hex],
       publish_order: [:hex]
@@ -20,7 +20,7 @@
         branch: "main",
         subdir: "core/execution_plane"
       },
-      hex: "~> 0.2.0",
+      hex: "~> 0.3.0",
       default_order: [:path, :github, :hex],
       publish_order: [:hex]
     },
@@ -63,7 +63,7 @@
     jido_integration_contracts: %{
       path: "../jido_integration/core/contracts",
       github: %{
-        repo: "agentjido/jido_integration",
+        repo: "nshkrdotcom/jido_integration",
         branch: "main",
         subdir: "core/contracts"
       },
@@ -75,7 +75,7 @@
     jido_integration_provider_classification: %{
       path: "../jido_integration/core/provider_classification",
       github: %{
-        repo: "agentjido/jido_integration",
+        repo: "nshkrdotcom/jido_integration",
         branch: "main",
         subdir: "core/provider_classification"
       },
@@ -85,8 +85,10 @@
       publish_order: [:hex]
     },
     weld: %{
-      hex: "~> 0.8.2",
-      default_order: [:hex],
+      path: "../weld",
+      github: %{repo: "nshkrdotcom/weld", branch: "main"},
+      hex: "~> 0.9.0",
+      default_order: [:path, :github, :hex],
       publish_order: [:hex]
     }
   }

@@ -43,6 +43,7 @@ defmodule Citadel.ContextAuthority.PolicyAuthorizer do
          :ok <- ensure_redaction_class(request, opts),
          :ok <- ensure_operation(request, opts),
          :ok <- ensure_operation_evidence(request),
+         :ok <- ensure_evidence_verified(request, opts),
          :ok <- ensure_fresh_policy(request, opts) do
       {:ok, build_grant(packet, request, model_classes, opts)}
     end
@@ -235,6 +236,43 @@ defmodule Citadel.ContextAuthority.PolicyAuthorizer do
   end
 
   defp ensure_operation_evidence(%AuthorityRequest{}), do: :ok
+
+  defp ensure_evidence_verified(%AuthorityRequest{} = request, opts) do
+    case Keyword.get(opts, :evidence_resolver) do
+      nil ->
+        :ok
+
+      resolver when is_function(resolver, 2) ->
+        request.evidence_refs
+        |> Enum.reduce_while(:ok, fn ref, :ok ->
+          case resolver.(ref, request) do
+            :ok -> {:cont, :ok}
+            {:ok, evidence} -> evidence_tenant_matches(ref, evidence, request)
+            true -> {:cont, :ok}
+            _other -> {:halt, evidence_unverified(request, ref)}
+          end
+        end)
+
+      _other ->
+        failure(:invalid_request, "evidence_resolver must be a two-arity function", request)
+    end
+  end
+
+  defp evidence_tenant_matches(ref, %{tenant_ref: tenant_ref}, %AuthorityRequest{} = request)
+       when tenant_ref != request.tenant_ref do
+    {:halt, evidence_unverified(request, ref)}
+  end
+
+  defp evidence_tenant_matches(ref, %{"tenant_ref" => tenant_ref}, %AuthorityRequest{} = request)
+       when tenant_ref != request.tenant_ref do
+    {:halt, evidence_unverified(request, ref)}
+  end
+
+  defp evidence_tenant_matches(_ref, _evidence, _request), do: {:cont, :ok}
+
+  defp evidence_unverified(%AuthorityRequest{} = request, ref) do
+    failure(:evidence_unverified, "authority evidence could not be verified", request, [ref])
+  end
 
   defp ensure_fresh_policy(%AuthorityRequest{policy_expires_at: nil}, _opts), do: :ok
 

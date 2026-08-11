@@ -13,6 +13,8 @@
 
 # Citadel
 
+Current release: `0.1.0` (2026-08-10).
+
 Citadel is the host-local Brain kernel for a generic agentic OS. It accepts structured ingress at the kernel boundary, compiles Brain policy and planning decisions, preserves host-local session continuity, and projects Brain-authored packets toward the shared `jido_integration` contracts layer.
 
 This repository is now aligned to the packet-defined non-umbrella workspace. The old single-package scaffold is gone; the package graph and ownership boundaries are the source of truth.
@@ -246,7 +248,7 @@ Citadel is pinned to Elixir `~> 1.19` and OTP 28. The repo-level `.tool-versions
 The root Mix project is a tooling-only workspace orchestrator. Wave 1 materializes the packet-pinned workspace tooling and dependency posture explicitly:
 
 - `{:blitz, "~> 0.3.0", runtime: false}` for workspace fanout
-- `{:weld, "~> 0.8.2", runtime: false}` for repo-local package projection and release preparation
+- `{:weld, "~> 0.9.0", runtime: false}` for repo-local package projection and release preparation
 - `{:jcs, "~> 0.2.0"}` in `core/contract_core` for RFC 8785 / JCS ownership
 
 Common commands:
@@ -298,11 +300,11 @@ artifact, declares canonical `jido_integration_contracts` as a Jido-owned
 external dependency, and preserves package ownership instead of flattening the
 workspace into a monolith.
 
-The welded artifact declares the `execution_plane` package dependency so the
-authority verifier boundary is explicit. During local in-flight workspace
-development this may resolve to the sibling Execution Plane checkout at
-`core/execution_plane`; formal publication should use the published
-`execution_plane` package.
+The welded artifact declares the `execution_plane`, `ground_plane_contracts`,
+and persistence-policy package dependencies so the authority verifier and
+trace boundaries are explicit. During local in-flight workspace development
+these may resolve to sibling checkouts; formal publication resolves the
+published Hex packages.
 
 Common publication commands:
 

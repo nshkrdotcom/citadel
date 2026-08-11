@@ -1,5 +1,7 @@
 # Citadel QC And Operations
 
+Release: `0.1.0` (2026-08-10).
+
 ## Local Commands
 
 ```bash

@@ -1,5 +1,7 @@
 # Citadel Context ABI Authority
 
+Release: `0.1.0` (2026-08-10).
+
 Citadel owns the authority decision attached to Context ABI packets. It does
 not build context packets, render prompts, execute models, or reduce workflow
 truth.

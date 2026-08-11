@@ -13,6 +13,8 @@
 
 # Citadel
 
+Current release: `0.1.0` (2026-08-10).
+
 Citadel is the host-local Brain kernel for a generic agentic OS. It accepts structured ingress at the kernel boundary, compiles Brain policy and planning decisions, preserves host-local session continuity, and projects Brain-authored packets toward the shared `jido_integration` contracts layer.
 
 This repository is now aligned to the packet-defined non-umbrella workspace. The old single-package scaffold is gone; the package graph and ownership boundaries are the source of truth.
@@ -68,6 +70,13 @@ intent. Downgrades are rejected before lower submission. Node hosts can use the
 Citadel `ExecutionPlane.Authority.Verifier` implementation to validate Citadel
 authority refs, but Citadel still does not become the lane host or lower
 execution node.
+
+The NSHKR cleanup pass tightened Context ABI authority evidence. The
+context-authority authorizer can now receive an explicit evidence resolver and
+fails closed when an authority ref cannot be resolved or when resolved evidence
+does not match the request tenant. Ref-only fixture posture remains available
+when no resolver is supplied, but release proofs should supply resolvable
+evidence before treating authority refs as verified.
 
 The repo also carries the host-ingress bridge used by host applications that
 need structured ingress into the kernel. That bridge accepts typed request
@@ -239,7 +248,7 @@ Citadel is pinned to Elixir `~> 1.19` and OTP 28. The repo-level `.tool-versions
 The root Mix project is a tooling-only workspace orchestrator. Wave 1 materializes the packet-pinned workspace tooling and dependency posture explicitly:
 
 - `{:blitz, "~> 0.3.0", runtime: false}` for workspace fanout
-- `{:weld, "~> 0.8.2", runtime: false}` for repo-local package projection and release preparation
+- `{:weld, "~> 0.9.0", runtime: false}` for repo-local package projection and release preparation
 - `{:jcs, "~> 0.2.0"}` in `core/contract_core` for RFC 8785 / JCS ownership
 
 Common commands:
@@ -291,11 +300,11 @@ artifact, declares canonical `jido_integration_contracts` as a Jido-owned
 external dependency, and preserves package ownership instead of flattening the
 workspace into a monolith.
 
-The welded artifact declares the `execution_plane` package dependency so the
-authority verifier boundary is explicit. During local in-flight workspace
-development this may resolve to the sibling Execution Plane checkout at
-`core/execution_plane`; formal publication should use the published
-`execution_plane` package.
+The welded artifact declares the `execution_plane`, `ground_plane_contracts`,
+and persistence-policy package dependencies so the authority verifier and
+trace boundaries are explicit. During local in-flight workspace development
+these may resolve to sibling checkouts; formal publication resolves the
+published Hex packages.
 
 Common publication commands:
 
@@ -419,3 +428,44 @@ Operational rules:
 - Evidence is emitted through authority contract tests, policy pack tests,
   conformance receipts, host-ingress harnesses, StackLab governance proofs, and
   AITrace observability refs.
+
+## Chassis Deployment Authority
+
+Citadel is the authority source for Chassis deployment, rollback,
+host-register, host-drain, provision, and secret-rotation mutations. Existing
+`boundary_class: "chassis.*"` intents are compiled through
+`Citadel.ExecutionGovernanceCompiler.compile!/4` and must fail closed when the
+caller lacks tenant, residency, budget, or mutation authority. Chassis carries
+the resulting `authority_ref`; it does not invent policy semantics.
+
+## Chassis Evolution Authority Intents
+
+Chassis Evolution, host-daemon swap, model materialization, tensor reload, and
+hardware admission add these Citadel authority intents:
+
+- `authority:chassis:evolution:create_batch`
+- `authority:chassis:evolution:start`
+- `authority:chassis:evolution:run_coding_agent`
+- `authority:chassis:evolution:provision_trial`
+- `authority:chassis:evolution:score_candidate`
+- `authority:chassis:evolution:request_promotion`
+- `authority:chassis:evolution:promote_candidate`
+- `authority:chassis:evolution:rollback_candidate`
+- `authority:chassis:host_daemon:swap`
+- `authority:chassis:host_daemon:rollback`
+- `authority:chassis:model:materialize_weight`
+- `authority:chassis:model:reload_tensor_patch`
+- `authority:chassis:hardware:admit_accelerator`
+
+The intent catalogue is documented in
+`../j/jido_brainstorm/nshkrdotcom/docs/20260529/chassis_impl/0531_chassis_evolution_citadel_consent_and_authority.md`.
+
+## Promotion Consent Binding
+
+`authority:chassis:evolution:promote_candidate` binds the full promotion
+precondition set: candidate, failure batch, patch digest, base release,
+artifact digest, score matrix, target installation, approved state volume
+mounts, rollback ref, trace id, tenant, installation, and
+`operator_consent_ref`. The `operator_consent_ref` is distinct from
+`authority_ref`; both must be present and valid before Chassis may swap a
+candidate into service.

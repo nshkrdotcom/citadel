@@ -136,6 +136,8 @@ defmodule Citadel.WorkspaceTest do
     assert is_binary(publication_deps[:aitrace][:requirement])
 
     assert execution_plane_dependency_declared?(publication_deps[:execution_plane])
+
+    assert ground_plane_contracts_dependency_declared?(publication_deps[:ground_plane_contracts])
   end
 
   test "weld manifest keeps publication derivative of the workspace architecture" do
@@ -165,6 +167,7 @@ defmodule Citadel.WorkspaceTest do
 
     assert "aitrace" in result.artifact.external_deps
     assert "execution_plane" in result.artifact.external_deps
+    assert "ground_plane_contracts" in result.artifact.external_deps
     assert "jido_integration_contracts" in result.artifact.external_deps
     assert "jido_integration_provider_classification" in result.artifact.external_deps
     assert "outer_brain_context_abi" in result.artifact.external_deps
@@ -191,6 +194,21 @@ defmodule Citadel.WorkspaceTest do
   end
 
   defp execution_plane_dependency_declared?(_other), do: false
+
+  defp ground_plane_contracts_dependency_declared?(%{requirement: requirement, opts: []})
+       when is_binary(requirement),
+       do: true
+
+  defp ground_plane_contracts_dependency_declared?(%{requirement: nil, opts: opts}) do
+    String.contains?(to_string(opts[:git]), "/ground_plane") and
+      opts[:subdir] == "core/ground_plane_contracts"
+  end
+
+  defp ground_plane_contracts_dependency_declared?(dependency) when is_list(dependency) do
+    ground_plane_contracts_dependency_declared?(Map.new(dependency))
+  end
+
+  defp ground_plane_contracts_dependency_declared?(_other), do: false
 
   defp jido_contracts_dependency_declared?(%{requirement: requirement, opts: []})
        when is_binary(requirement),

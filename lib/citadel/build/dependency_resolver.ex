@@ -11,14 +11,19 @@ defmodule Citadel.Build.DependencyResolver do
   @repo_root Path.expand("../../..", __DIR__)
   @published_jido_integration_contracts_requirement "~> 0.1.0"
   @published_jido_integration_provider_classification_requirement "~> 0.1.0"
-  @published_aitrace_requirement "~> 0.1.0"
-  @published_execution_plane_requirement "~> 0.1.0"
+  @published_aitrace_requirement "~> 0.2.0"
+  @published_execution_plane_requirement "~> 0.3.0"
+  @published_ground_plane_contracts_requirement "~> 0.1.0"
   @published_ground_plane_persistence_policy_requirement "~> 0.1.0"
   @published_outer_brain_context_abi_requirement "~> 0.1.0"
   @weld_git_sources %{
     execution_plane: [
       repo_root: Path.expand("../execution_plane", @repo_root),
       subdir: "core/execution_plane"
+    ],
+    ground_plane_contracts: [
+      repo_root: Path.expand("../ground_plane", @repo_root),
+      subdir: "core/ground_plane_contracts"
     ],
     ground_plane_persistence_policy: [
       repo_root: Path.expand("../ground_plane", @repo_root),
@@ -82,6 +87,10 @@ defmodule Citadel.Build.DependencyResolver do
     @published_execution_plane_requirement
   end
 
+  def published_ground_plane_contracts_requirement do
+    @published_ground_plane_contracts_requirement
+  end
+
   def published_ground_plane_persistence_policy_requirement do
     @published_ground_plane_persistence_policy_requirement
   end
@@ -110,8 +119,16 @@ defmodule Citadel.Build.DependencyResolver do
     weld_dependency(:execution_plane)
   end
 
+  def ground_plane_contracts_weld_dependency do
+    weld_dependency(:ground_plane_contracts)
+  end
+
   def local_execution_plane_weld_dependency? do
     local_dependency?(:execution_plane)
+  end
+
+  def local_ground_plane_contracts_weld_dependency? do
+    local_dependency?(:ground_plane_contracts)
   end
 
   def ground_plane_persistence_policy_weld_dependency do

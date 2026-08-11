@@ -39,7 +39,10 @@ defmodule Citadel.MixProject do
   end
 
   def application do
-    [mod: {Citadel.Application, []}, extra_applications: [:crypto, :logger]]
+    [
+      mod: {Citadel.Application, []},
+      extra_applications: [:crypto, :ecto_sql, :logger]
+    ]
   end
 
   def elixirc_paths(:test) do
@@ -101,9 +104,16 @@ defmodule Citadel.MixProject do
 
   defp deps do
     [
-      {:aitrace, "~> 0.1.0"},
+      {:aitrace, "~> 0.2.0"},
+      {:ecto_sql, "~> 3.14"},
       {:execution_plane,
        [subdir: "core/execution_plane", git: "file:///home/home/p/g/n/execution_plane"]},
+      {:ground_plane_contracts,
+       [
+         subdir: "core/ground_plane_contracts",
+         git: "file:///home/home/p/g/n/ground_plane",
+         override: true
+       ]},
       {:ground_plane_persistence_policy,
        [
          subdir: "core/persistence_policy",
@@ -121,7 +131,10 @@ defmodule Citadel.MixProject do
        ]},
       {:outer_brain_context_abi,
        [subdir: "core/context_abi", git: "file:///home/home/p/g/n/outer_brain", override: true]},
+      {:postgrex, "~> 0.22"},
       {:telemetry, "~> 1.3"},
+      {:credo, "~> 1.7", [only: [:dev, :test], runtime: false]},
+      {:dialyxir, "~> 1.4", [only: [:dev, :test], runtime: false]},
       {:ex_doc, "~> 0.40", [only: :dev, runtime: false]}
     ]
   end

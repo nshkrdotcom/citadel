@@ -109,8 +109,11 @@ defmodule DependencySources do
 
   def config!(repo_root \\ Path.dirname(__DIR__)) do
     case config(repo_root) do
-      {:ok, config} -> config
-      :error -> raise File.Error, reason: :enoent, action: "read file", path: config_path(repo_root)
+      {:ok, config} ->
+        config
+
+      :error ->
+        raise File.Error, reason: :enoent, action: "read file", path: config_path(repo_root)
     end
   end
 

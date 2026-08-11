@@ -1,5 +1,7 @@
 # Citadel Guides
 
+Release: `0.1.0` (2026-08-10).
+
 Implementation-facing guides:
 
 - [Generalized Stack Boundary](https://github.com/nshkrdotcom/citadel/blob/main/guides/generalized_stack.md)

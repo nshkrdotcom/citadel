@@ -193,6 +193,7 @@ defmodule Citadel.Workspace do
         opts: []
       ],
       execution_plane: DependencyResolver.execution_plane_weld_dependency(),
+      ground_plane_contracts: DependencyResolver.ground_plane_contracts_weld_dependency(),
       ground_plane_persistence_policy:
         DependencyResolver.ground_plane_persistence_policy_weld_dependency(),
       outer_brain_context_abi: DependencyResolver.outer_brain_context_abi_weld_dependency(),
@@ -230,6 +231,10 @@ defmodule Citadel.Workspace do
               "Runtime-facing Citadel core packages and bridge adapters projected from the workspace",
             licenses: ["MIT"],
             maintainers: ["nshkrdotcom"],
+            development_dependencies: [
+              {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+              {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
+            ],
             links: %{
               "GitHub" => "https://github.com/nshkrdotcom/citadel",
               "Publication Guide" =>
@@ -246,10 +251,12 @@ defmodule Citadel.Workspace do
             artifact_tests: ["packaging/weld/citadel/test"],
             hex_build:
               not DependencyResolver.local_execution_plane_weld_dependency?() and
+                not DependencyResolver.local_ground_plane_contracts_weld_dependency?() and
                 not DependencyResolver.local_ground_plane_persistence_policy_weld_dependency?() and
                 not DependencyResolver.local_outer_brain_context_abi_weld_dependency?(),
             hex_publish:
               not DependencyResolver.local_execution_plane_weld_dependency?() and
+                not DependencyResolver.local_ground_plane_contracts_weld_dependency?() and
                 not DependencyResolver.local_ground_plane_persistence_policy_weld_dependency?() and
                 not DependencyResolver.local_outer_brain_context_abi_weld_dependency?()
           ]

@@ -1,5 +1,7 @@
 # Citadel Generalized Stack Boundary
 
+Release: `0.1.0` (2026-08-10).
+
 ## Responsibility
 
 Citadel owns authority compilation, policy posture, Brain/kernel context,

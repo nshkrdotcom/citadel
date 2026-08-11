@@ -29,9 +29,14 @@ defmodule Citadel.PublicationSurfaceTest do
   test "welded artifact only retains publishable external dependencies" do
     deps = Mix.Project.config()[:deps]
 
-    assert dependency_tuple(deps, :aitrace) == {:aitrace, "~> 0.1.0", []}
+    assert dependency_tuple(deps, :aitrace) == {:aitrace, "~> 0.2.0", []}
     assert execution_plane_dependency?(dependency_tuple(deps, :execution_plane))
-    assert ground_plane_policy_dependency?(dependency_tuple(deps, :ground_plane_persistence_policy))
+    assert ground_plane_contracts_dependency?(dependency_tuple(deps, :ground_plane_contracts))
+
+    assert ground_plane_policy_dependency?(
+             dependency_tuple(deps, :ground_plane_persistence_policy)
+           )
+
     assert jido_contracts_dependency?(dependency_tuple(deps, :jido_integration_contracts))
   end
 
@@ -61,6 +66,17 @@ defmodule Citadel.PublicationSurfaceTest do
   end
 
   defp execution_plane_dependency?(_other), do: false
+
+  defp ground_plane_contracts_dependency?({:ground_plane_contracts, requirement, []})
+       when is_binary(requirement),
+       do: true
+
+  defp ground_plane_contracts_dependency?({:ground_plane_contracts, nil, opts}) do
+    String.contains?(to_string(opts[:git]), "/ground_plane") and
+      opts[:subdir] == "core/ground_plane_contracts" and opts[:override]
+  end
+
+  defp ground_plane_contracts_dependency?(_other), do: false
 
   defp ground_plane_policy_dependency?({:ground_plane_persistence_policy, requirement, []})
        when is_binary(requirement),

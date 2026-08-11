@@ -1,5 +1,7 @@
 # Publication
 
+Release covered by this guide: `0.1.0` (2026-08-10).
+
 Citadel publishes a welded public artifact as a derivative of the workspace
 graph.
 

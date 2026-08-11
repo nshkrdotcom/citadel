@@ -43,8 +43,9 @@ defmodule Citadel.DependencyResolverTest do
 
   test "published requirements remain explicit without env toggles" do
     assert DependencyResolver.published_jido_integration_contracts_requirement() == "~> 0.1.0"
-    assert DependencyResolver.published_aitrace_requirement() == "~> 0.1.0"
-    assert DependencyResolver.published_execution_plane_requirement() == "~> 0.1.0"
+    assert DependencyResolver.published_aitrace_requirement() == "~> 0.2.0"
+    assert DependencyResolver.published_execution_plane_requirement() == "~> 0.3.0"
+    assert DependencyResolver.published_ground_plane_contracts_requirement() == "~> 0.1.0"
 
     assert DependencyResolver.published_ground_plane_persistence_policy_requirement() ==
              "~> 0.1.0"
