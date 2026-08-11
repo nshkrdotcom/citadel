@@ -94,6 +94,10 @@ defmodule Citadel.Build.DependencyResolver do
     external_dep(:execution_plane, opts)
   end
 
+  def ground_plane_contracts(opts \\ []) do
+    external_dep(:ground_plane_contracts, opts)
+  end
+
   def ground_plane_persistence_policy(opts \\ []) do
     external_dep(:ground_plane_persistence_policy, opts)
   end

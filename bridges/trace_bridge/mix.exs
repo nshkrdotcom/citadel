@@ -29,6 +29,7 @@ defmodule Citadel.TraceBridge.MixProject do
       {:citadel_governance, path: "../../core/citadel_governance"},
       {:citadel_kernel, path: "../../core/citadel_kernel"},
       {:citadel_observability_contract, path: "../../core/observability_contract"},
+      DependencyResolver.ground_plane_contracts(override: true),
       DependencyResolver.aitrace(),
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
     ]
