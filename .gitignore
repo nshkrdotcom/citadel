@@ -5,8 +5,6 @@
 /dist/archive/
 /dist/release_bundles/
 /dist/hex/*/projection.lock.json
-/.dependency_sources.local.exs
-
 **/_build/
 **/cover/
 **/deps/

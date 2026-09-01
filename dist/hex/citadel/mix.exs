@@ -106,31 +106,13 @@ defmodule Citadel.MixProject do
     [
       {:aitrace, "~> 0.2.0"},
       {:ecto_sql, "~> 3.14"},
-      {:execution_plane,
-       [subdir: "core/execution_plane", git: "file:///home/home/p/g/n/execution_plane"]},
-      {:ground_plane_contracts,
-       [
-         subdir: "core/ground_plane_contracts",
-         git: "file:///home/home/p/g/n/ground_plane",
-         override: true
-       ]},
-      {:ground_plane_persistence_policy,
-       [
-         subdir: "core/persistence_policy",
-         git: "file:///home/home/p/g/n/ground_plane",
-         override: true
-       ]},
+      {:execution_plane, "~> 0.3.0"},
+      {:ground_plane_contracts, "~> 0.1.0", [override: true]},
+      {:ground_plane_persistence_policy, "~> 0.1.0", [override: true]},
       {:jcs, "~> 0.2.0"},
-      {:jido_integration_contracts,
-       [subdir: "core/contracts", git: "file:///home/home/p/g/n/jido_integration", override: true]},
-      {:jido_integration_provider_classification,
-       [
-         subdir: "core/provider_classification",
-         git: "file:///home/home/p/g/n/jido_integration",
-         override: true
-       ]},
-      {:outer_brain_context_abi,
-       [subdir: "core/context_abi", git: "file:///home/home/p/g/n/outer_brain", override: true]},
+      {:jido_integration_contracts, "~> 0.1.0", [override: true]},
+      {:jido_integration_provider_classification, "~> 0.1.0", [override: true]},
+      {:outer_brain_context_abi, "~> 0.1.0", [override: true]},
       {:postgrex, "~> 0.22"},
       {:telemetry, "~> 1.3"},
       {:credo, "~> 1.7", [only: [:dev, :test], runtime: false]},

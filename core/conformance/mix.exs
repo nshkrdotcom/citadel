@@ -1,6 +1,4 @@
-unless Code.ensure_loaded?(Citadel.Build.DependencyResolver) do
-  Code.require_file("../../lib/citadel/build/dependency_resolver.ex", __DIR__)
-end
+if bootstrap = System.get_env("MIX_WORKSPACE_OPS_BOOTSTRAP"), do: Code.require_file(bootstrap)
 
 defmodule Citadel.Conformance.MixProject do
   use Mix.Project
@@ -40,8 +38,14 @@ defmodule Citadel.Conformance.MixProject do
       {:citadel_coding_assist, path: "../../apps/coding_assist"},
       {:citadel_operator_assist, path: "../../apps/operator_assist"},
       {:citadel_host_surface_harness, path: "../../apps/host_surface_harness"},
-      Citadel.Build.DependencyResolver.jido_integration_contracts(),
+      workspace_dep({:jido_integration_contracts, "~> 0.1.0"}),
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
     ]
+  end
+
+  defp workspace_dep(committed) do
+    if function_exported?(MixWorkspaceOpsBootstrap, :dep, 2),
+      do: apply(MixWorkspaceOpsBootstrap, :dep, [committed, __DIR__]),
+      else: committed
   end
 end

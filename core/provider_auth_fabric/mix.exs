@@ -1,11 +1,7 @@
-unless Code.ensure_loaded?(Citadel.Build.DependencyResolver) do
-  Code.require_file("../../build_support/dependency_resolver.exs", __DIR__)
-end
+if bootstrap = System.get_env("MIX_WORKSPACE_OPS_BOOTSTRAP"), do: Code.require_file(bootstrap)
 
 defmodule Citadel.ProviderAuthFabric.MixProject do
   use Mix.Project
-
-  alias Citadel.Build.DependencyResolver
 
   def project do
     [
@@ -33,8 +29,14 @@ defmodule Citadel.ProviderAuthFabric.MixProject do
       {:citadel_policy_packs, path: "../policy_packs"},
       {:citadel_observability_contract, path: "../observability_contract"},
       {:citadel_native_auth_assertion, path: "../native_auth_assertion"},
-      DependencyResolver.jido_integration_provider_classification(),
+      workspace_dep({:jido_integration_provider_classification, "~> 0.1.0"}),
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
     ]
+  end
+
+  defp workspace_dep(committed) do
+    if function_exported?(MixWorkspaceOpsBootstrap, :dep, 2),
+      do: apply(MixWorkspaceOpsBootstrap, :dep, [committed, __DIR__]),
+      else: committed
   end
 end

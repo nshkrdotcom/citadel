@@ -11,7 +11,7 @@ defmodule Citadel.JidoContractConsumerDependencyTest do
     "core/conformance/mix.exs"
   ]
 
-  test "workspace shared-contract consumers use the canonical dependency resolver" do
+  test "workspace shared-contract consumers use the tuple-first MWO seam" do
     mix_files_with_contract_refs =
       "mix.exs"
       |> tracked_paths_with("jido_integration_contracts")
@@ -25,9 +25,13 @@ defmodule Citadel.JidoContractConsumerDependencyTest do
 
       assert String.contains?(
                source,
-               "Citadel.Build.DependencyResolver.jido_integration_contracts()"
+               "workspace_dep({:jido_integration_contracts,"
              )
 
+      assert String.contains?(source, "System.get_env(\"MIX_WORKSPACE_OPS_BOOTSTRAP\")")
+      assert String.contains?(source, "MixWorkspaceOpsBootstrap, :dep, [committed, __DIR__]")
+
+      refute String.contains?(source, "Dependency" <> "Resolver")
       refute String.contains?(source, "github.com/agentjido/jido_integration")
       refute String.contains?(source, "core/jido_integration_contracts")
     end
@@ -42,31 +46,13 @@ defmodule Citadel.JidoContractConsumerDependencyTest do
     refute String.contains?(lock, "core/jido_integration_contracts")
   end
 
-  test "generated projection declares Jido contracts as the canonical external dependency" do
+  test "generated projection keeps Jido contracts external and source-neutral" do
     projection = File.read!(Path.join(@repo_root, "dist/hex/citadel/mix.exs"))
 
     refute String.contains?(projection, "components/core/jido_integration_contracts")
     assert String.contains?(projection, "{:jido_integration_contracts")
-    assert String.contains?(projection, "subdir: \"core/contracts\"")
+    refute String.contains?(projection, "file://")
     refute String.contains?(projection, "jido_integration_v2_contracts")
-  end
-
-  test "root workspace resolves external contract dependency through DependencyResolver" do
-    resolver = File.read!(Path.join(@repo_root, "lib/citadel/build/dependency_resolver.ex"))
-    workspace = File.read!(Path.join(@repo_root, "lib/citadel/workspace.ex"))
-
-    dependency_config =
-      File.read!(Path.join(@repo_root, "build_support/dependency_sources.config.exs"))
-
-    assert String.contains?(resolver, "def jido_integration_contracts")
-    assert String.contains?(resolver, "apply(:dep")
-    assert String.contains?(resolver, "@published_jido_integration_contracts_requirement")
-    refute String.contains?(resolver, "JIDO_INTEGRATION_PATH")
-    refute String.contains?(resolver, "CITADEL_JIDO_INTEGRATION_CONTRACTS_PATH")
-    refute String.contains?(resolver, "System.get_env")
-    assert String.contains?(workspace, "DependencyResolver.jido_integration_contracts_source()")
-    assert String.contains?(dependency_config, "repo: \"agentjido/jido_integration\"")
-    assert String.contains?(dependency_config, "subdir: \"core/contracts\"")
   end
 
   test "conformance published-contract script does not select dependencies through env" do

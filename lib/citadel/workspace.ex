@@ -6,8 +6,6 @@ defmodule Citadel.Workspace do
   testable surface without pretending to be the old single-package runtime.
   """
 
-  alias Citadel.Build.DependencyResolver
-
   @package_paths [
     "core/contract_core",
     "core/authority_contract",
@@ -108,6 +106,19 @@ defmodule Citadel.Workspace do
     otp: "28"
   }
 
+  @publication_dependency_declarations [
+    aitrace: [requirement: "~> 0.2.0", opts: []],
+    execution_plane: [requirement: "~> 0.3.0", opts: []],
+    ground_plane_contracts: [requirement: "~> 0.1.0", opts: [override: true]],
+    ground_plane_persistence_policy: [requirement: "~> 0.1.0", opts: [override: true]],
+    outer_brain_context_abi: [requirement: "~> 0.1.0", opts: [override: true]],
+    jido_integration_contracts: [requirement: "~> 0.1.0", opts: [override: true]],
+    jido_integration_provider_classification: [
+      requirement: "~> 0.1.0",
+      opts: [override: true]
+    ]
+  ]
+
   @spec package_paths() :: [String.t()]
   def package_paths, do: @package_paths
 
@@ -153,15 +164,6 @@ defmodule Citadel.Workspace do
     |> Enum.reject(&File.regular?(Path.join(&1, "mix.exs")))
   end
 
-  @spec shared_contract_dependency_source() ::
-          {:hex, String.t()}
-          | {:hex, String.t(), keyword()}
-          | {:github, String.t(), keyword()}
-          | {:path, String.t()}
-  def shared_contract_dependency_source do
-    DependencyResolver.jido_integration_contracts_source()
-  end
-
   @spec toolchain() :: %{elixir: String.t(), otp: String.t()}
   def toolchain, do: @toolchain
 
@@ -186,22 +188,7 @@ defmodule Citadel.Workspace do
   end
 
   @spec publication_dependency_declarations() :: keyword()
-  def publication_dependency_declarations do
-    [
-      aitrace: [
-        requirement: DependencyResolver.published_aitrace_requirement(),
-        opts: []
-      ],
-      execution_plane: DependencyResolver.execution_plane_weld_dependency(),
-      ground_plane_contracts: DependencyResolver.ground_plane_contracts_weld_dependency(),
-      ground_plane_persistence_policy:
-        DependencyResolver.ground_plane_persistence_policy_weld_dependency(),
-      outer_brain_context_abi: DependencyResolver.outer_brain_context_abi_weld_dependency(),
-      jido_integration_contracts: DependencyResolver.jido_integration_contracts_weld_dependency(),
-      jido_integration_provider_classification:
-        DependencyResolver.jido_integration_provider_classification_weld_dependency()
-    ]
-  end
+  def publication_dependency_declarations, do: @publication_dependency_declarations
 
   @spec weld_manifest() :: keyword()
   def weld_manifest do
@@ -249,16 +236,8 @@ defmodule Citadel.Workspace do
           ],
           verify: [
             artifact_tests: ["packaging/weld/citadel/test"],
-            hex_build:
-              not DependencyResolver.local_execution_plane_weld_dependency?() and
-                not DependencyResolver.local_ground_plane_contracts_weld_dependency?() and
-                not DependencyResolver.local_ground_plane_persistence_policy_weld_dependency?() and
-                not DependencyResolver.local_outer_brain_context_abi_weld_dependency?(),
-            hex_publish:
-              not DependencyResolver.local_execution_plane_weld_dependency?() and
-                not DependencyResolver.local_ground_plane_contracts_weld_dependency?() and
-                not DependencyResolver.local_ground_plane_persistence_policy_weld_dependency?() and
-                not DependencyResolver.local_outer_brain_context_abi_weld_dependency?()
+            hex_build: false,
+            hex_publish: false
           ]
         ]
       ]

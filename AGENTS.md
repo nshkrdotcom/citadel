@@ -71,17 +71,14 @@ acceptance unless it runs the product-owned Extravaganza command path.
 
 ## Dependency Sources And Runtime Env
 
-- Dependency source selection is handled by
-  `build_support/dependency_sources.exs` plus
-  `build_support/dependency_sources.config.exs`.
-- Use `.dependency_sources.local.exs` for local overrides; it is gitignored and
-  must not be committed.
-- Default dependency priority is `path -> GitHub -> Hex`; publish mode is
-  Hex-only and must fail with exact blockers when an internal dependency is not
-  available on Hex.
-- Dependency source selection must not read OS environment variables.
-- Weld verifies helper drift, manifests, dependency blockers, publish order, and
-  AGENTS guidance; Weld is not required before `mix deps.get`.
+- Managed dependencies use the tuple-first MWO seam. Each committed tuple must
+  remain a valid standalone Mix dependency when no MWO bootstrap is present.
+- The portfolio catalog declares source coordinates; operator preferences live
+  in the MWO operator ledger rather than repository-local override files.
+- Same-repository package relationships remain ordinary relative `path:`
+  dependencies.
+- Weld verifies manifests, dependency blockers, publish order, and AGENTS
+  guidance; Weld is not required before `mix deps.get`.
 - The only current Hex publication target in the Extravaganza readiness pass is
   Weld `0.8.1`; do not publish Citadel as part of this pass.
 - Runtime application code under `lib/**` must not call direct OS env APIs such

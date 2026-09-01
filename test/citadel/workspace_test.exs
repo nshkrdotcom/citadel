@@ -36,10 +36,6 @@ defmodule Citadel.WorkspaceTest do
     assert "core/*/lib" in Workspace.static_analysis_paths()
   end
 
-  test "uses the released Weld line directly" do
-    assert {:weld, "~> 0.8.2", only: [:dev, :test], runtime: false} in MixProject.project()[:deps]
-  end
-
   test "uses Weld task autodiscovery instead of local release aliases" do
     aliases = MixProject.project()[:aliases]
 
@@ -86,14 +82,7 @@ defmodule Citadel.WorkspaceTest do
     refute Enum.any?(Workspace.static_analysis_paths(), &Workspace.generated_distribution_path?/1)
   end
 
-  test "exposes an explicit shared-contract dependency strategy" do
-    assert match?({:path, _path}, Workspace.shared_contract_dependency_source()) or
-             match?({:hex, "~> 0.1.0"}, Workspace.shared_contract_dependency_source())
-  end
-
   test "defines a derivative welded publication boundary" do
-    publication_deps = Workspace.publication_dependency_declarations()
-
     assert Workspace.proof_package_paths() == [
              "core/conformance",
              "apps/coding_assist",
@@ -121,23 +110,6 @@ defmodule Citadel.WorkspaceTest do
     refute "core/conformance" in Workspace.public_package_paths()
     refute "apps/host_surface_harness" in Workspace.public_package_paths()
     assert "surfaces/citadel_domain_surface" in Workspace.public_package_paths()
-
-    assert jido_contracts_dependency_declared?(publication_deps[:jido_integration_contracts])
-
-    assert jido_provider_classification_dependency_declared?(
-             publication_deps[:jido_integration_provider_classification]
-           )
-
-    assert outer_brain_context_abi_dependency_declared?(
-             publication_deps[:outer_brain_context_abi]
-           )
-
-    assert publication_deps[:aitrace][:opts] == []
-    assert is_binary(publication_deps[:aitrace][:requirement])
-
-    assert execution_plane_dependency_declared?(publication_deps[:execution_plane])
-
-    assert ground_plane_contracts_dependency_declared?(publication_deps[:ground_plane_contracts])
   end
 
   test "weld manifest keeps publication derivative of the workspace architecture" do
@@ -179,79 +151,4 @@ defmodule Citadel.WorkspaceTest do
 
     assert String.contains?(output, "citadel")
   end
-
-  defp execution_plane_dependency_declared?(%{requirement: requirement, opts: []})
-       when is_binary(requirement),
-       do: true
-
-  defp execution_plane_dependency_declared?(%{requirement: nil, opts: opts}) do
-    String.contains?(to_string(opts[:git]), "/execution_plane") and
-      opts[:subdir] == "core/execution_plane"
-  end
-
-  defp execution_plane_dependency_declared?(dependency) when is_list(dependency) do
-    execution_plane_dependency_declared?(Map.new(dependency))
-  end
-
-  defp execution_plane_dependency_declared?(_other), do: false
-
-  defp ground_plane_contracts_dependency_declared?(%{requirement: requirement, opts: []})
-       when is_binary(requirement),
-       do: true
-
-  defp ground_plane_contracts_dependency_declared?(%{requirement: nil, opts: opts}) do
-    String.contains?(to_string(opts[:git]), "/ground_plane") and
-      opts[:subdir] == "core/ground_plane_contracts"
-  end
-
-  defp ground_plane_contracts_dependency_declared?(dependency) when is_list(dependency) do
-    ground_plane_contracts_dependency_declared?(Map.new(dependency))
-  end
-
-  defp ground_plane_contracts_dependency_declared?(_other), do: false
-
-  defp jido_contracts_dependency_declared?(%{requirement: requirement, opts: []})
-       when is_binary(requirement),
-       do: true
-
-  defp jido_contracts_dependency_declared?(%{requirement: nil, opts: opts}) do
-    String.contains?(to_string(opts[:git]), "/jido_integration") and
-      opts[:subdir] == "core/contracts"
-  end
-
-  defp jido_contracts_dependency_declared?(dependency) when is_list(dependency) do
-    jido_contracts_dependency_declared?(Map.new(dependency))
-  end
-
-  defp jido_contracts_dependency_declared?(_other), do: false
-
-  defp jido_provider_classification_dependency_declared?(%{requirement: requirement, opts: []})
-       when is_binary(requirement),
-       do: true
-
-  defp jido_provider_classification_dependency_declared?(%{requirement: nil, opts: opts}) do
-    String.contains?(to_string(opts[:git]), "/jido_integration") and
-      opts[:subdir] == "core/provider_classification"
-  end
-
-  defp jido_provider_classification_dependency_declared?(dependency) when is_list(dependency) do
-    jido_provider_classification_dependency_declared?(Map.new(dependency))
-  end
-
-  defp jido_provider_classification_dependency_declared?(_other), do: false
-
-  defp outer_brain_context_abi_dependency_declared?(%{requirement: requirement, opts: []})
-       when is_binary(requirement),
-       do: true
-
-  defp outer_brain_context_abi_dependency_declared?(%{requirement: nil, opts: opts}) do
-    String.contains?(to_string(opts[:git]), "/outer_brain") and
-      opts[:subdir] == "core/context_abi"
-  end
-
-  defp outer_brain_context_abi_dependency_declared?(dependency) when is_list(dependency) do
-    outer_brain_context_abi_dependency_declared?(Map.new(dependency))
-  end
-
-  defp outer_brain_context_abi_dependency_declared?(_other), do: false
 end

@@ -1,19 +1,20 @@
 # Shared Contract Dependency Strategy
 
 Jido Integration owns the higher-order `Jido.Integration.V2` shared contracts
-in `../jido_integration/core/contracts`. Citadel consumes that package through
-`Citadel.Build.DependencyResolver`; it does not carry a local mirror of the
+in `../jido_integration/core/contracts`. Citadel declares that package through
+the tuple-first Mix Workspace Ops seam; it does not carry a local mirror of the
 `jido_integration_contracts` OTP app.
 
 OuterBrain owns the Context ABI in `../outer_brain/core/context_abi`. Citadel's
-`core/context_authority_contract` consumes that package through the same
-resolver so Context ABI packet structs and owner-local failure reason codes
-remain single-owner.
+`core/context_authority_contract` consumes that package through the same seam so
+Context ABI packet structs and owner-local failure reason codes remain
+single-owner.
 
 ## Packages Using The Shared Contract Slice
 
-The public Citadel packages that rely on these shared modules resolve them
-through the centralized dependency resolver:
+The public Citadel packages that rely on these shared modules declare committed
+Hex requirements and allow an invocation-scoped MWO overlay to select managed
+development coordinates:
 
 - `core/citadel_governance`
 - `bridges/invocation_bridge`
@@ -78,18 +79,17 @@ this disposition.
 
 ## Consumer Dependency Proof
 
-Workspace consumers that directly compile against the shared contracts call
-`Citadel.Build.DependencyResolver.jido_integration_contracts/1`. The allowed
-direct consumers are
+Workspace consumers that directly compile against the shared contracts use
+`workspace_dep({:jido_integration_contracts, "~> 0.1.0"})`. The allowed direct
+consumers are
 `core/citadel_governance`, `core/conformance`, `bridges/invocation_bridge`,
 `bridges/jido_integration_bridge`, and `bridges/projection_bridge`.
 
-Root workspace dependency resolution remains centralized in
-`Citadel.Build.DependencyResolver`, which can resolve the canonical sibling
-checkout, the configured Git sparse `core/contracts` source, or the published
-Hex projection. The direct `citadel_domain_surface` package is not part of the
-default welded Citadel artifact; when its lock references the shared contracts,
-it pins the upstream Git repository with sparse `core/contracts` checkout.
+Managed source selection belongs to the portfolio catalog, operator ledger, and
+MWO overlay. Each committed tuple remains valid with ordinary standalone Mix.
+The direct `citadel_domain_surface` package is not part of the default welded
+Citadel artifact; when its lock references the shared contracts, it pins the
+upstream Git repository with sparse `core/contracts` checkout.
 
 `test/citadel/jido_contract_consumer_dependency_test.exs` enforces those
 consumer modes and rejects independent local forks.

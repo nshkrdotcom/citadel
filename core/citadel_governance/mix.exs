@@ -1,6 +1,4 @@
-unless Code.ensure_loaded?(Citadel.Build.DependencyResolver) do
-  Code.require_file("../../lib/citadel/build/dependency_resolver.ex", __DIR__)
-end
+if bootstrap = System.get_env("MIX_WORKSPACE_OPS_BOOTSTRAP"), do: Code.require_file(bootstrap)
 
 defmodule Citadel.Governance.MixProject do
   use Mix.Project
@@ -35,13 +33,19 @@ defmodule Citadel.Governance.MixProject do
       {:citadel_execution_governance_contract, path: "../execution_governance_contract"},
       {:citadel_observability_contract, path: "../observability_contract"},
       {:citadel_policy_packs, path: "../policy_packs"},
-      Citadel.Build.DependencyResolver.jido_integration_contracts(),
+      workspace_dep({:jido_integration_contracts, "~> 0.1.0"}),
       {:ecto_sql, "~> 3.14"},
       {:postgrex, "~> 0.22"},
       {:stream_data, "~> 1.1", only: :test},
       {:muex, "~> 0.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
     ]
+  end
+
+  defp workspace_dep(committed) do
+    if function_exported?(MixWorkspaceOpsBootstrap, :dep, 2),
+      do: apply(MixWorkspaceOpsBootstrap, :dep, [committed, __DIR__]),
+      else: committed
   end
 
   defp aliases do
