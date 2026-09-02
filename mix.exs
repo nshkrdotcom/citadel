@@ -31,7 +31,7 @@ defmodule Citadel.Workspace.MixProject do
 
   defp deps do
     [
-      workspace_dep({:blitz, "~> 0.3.0", runtime: false}),
+      {:blitz, "~> 0.3.0", runtime: false},
       workspace_dep({:weld, "~> 0.9.0", only: [:dev, :test], runtime: false}),
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
